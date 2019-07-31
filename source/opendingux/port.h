@@ -67,6 +67,9 @@ typedef struct timespec timespec;
 #define FILE_TELL(filename_tag)                                             \
   ftell(filename_tag)                                                       \
 
+#define FILE_GETS(current_line, filename_tag)                               \
+  fgets(current_line, 256, filename_tag)                                    \
+
 #include "draw.h"
 #include "gui.h"
 #include "settings.h"

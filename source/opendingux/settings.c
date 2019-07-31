@@ -228,7 +228,7 @@ void ReGBA_LoadSettings(char *cfg_name, bool PerGame)
 	if(FILE_CHECK_VALID(fd)) {
 		char line[257];
 
-		while(fgets(line, 256, fd))
+		while(FILE_GETS(line, fd))
 		{
 			line[256] = '\0';
 

@@ -90,6 +90,9 @@ typedef clock_t timespec;
 #define FILE_TELL(filename_tag)                                             \
   ftell(filename_tag)                                                       \
 
+#define FILE_GETS(current_line, filename_tag)                               \
+  fgets(current_line, 256, filename_tag)                                    \
+
 extern const char* GetFileName(const char* Path);
 extern void RemoveExtension(char* Result, const char* FileName);
 extern void GetFileNameNoExtension(char* Result, const char* Path);

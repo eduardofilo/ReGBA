@@ -91,6 +91,9 @@ typedef u32 FIXED16_16;   // Q16.16 fixed-point
 #define FILE_SEEK(filename_tag, offset, type)                               \
   sceIoLseek(filename_tag, offset, PSP_##type)                              \
 
+#define FILE_GETS(current_line, filename_tag)                               \
+  fgets(current_line, 256, filename_tag)                                    \
+
 /* Tuning parameters for the PSP version of gpSP */
 /* Its processors are:
  * a) a Sony CXD2962GG at 222 MHz based on the MIPS R4000
