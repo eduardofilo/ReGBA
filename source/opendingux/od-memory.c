@@ -32,7 +32,7 @@ uint8_t* ReGBA_MapEntireROM(FILE_TAG_TYPE File, size_t Size)
 		Size,
 		PROT_READ | PROT_WRITE,
 		MAP_PRIVATE,
-		fileno(File),
+		fileno(File.f),
 		0 /* offset into file */);
 	if (Result != NULL)
 	{

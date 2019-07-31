@@ -2,6 +2,7 @@
 #define _PORT_H_
 
 #include <linux/limits.h>
+#include <errno.h>
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -11,9 +12,12 @@ typedef int16_t s16;
 typedef int32_t s32;
 typedef uint64_t u64;
 
-typedef FILE* FILE_TAG_TYPE;
-#include <linux/limits.h>
-#include <errno.h>
+struct od_port_file_data {
+	FILE *f;
+};
+
+typedef struct od_port_file_data FILE_TAG_TYPE;
+
 #define MAX_PATH PATH_MAX
 #define MAX_FILE PATH_MAX
 
@@ -41,34 +45,34 @@ typedef struct timespec timespec;
 #define FILE_OPEN_WRITE ("wb")
 
 #define FILE_OPEN(filename_tag, filename, mode)                             \
-  filename_tag = fopen(filename, FILE_OPEN_##mode)                          \
+  filename_tag.f = fopen(filename, FILE_OPEN_##mode)                        \
 
 #define FILE_CHECK_VALID(filename_tag)                                      \
-  (filename_tag != FILE_TAG_INVALID)                                        \
+  (filename_tag.f != NULL)                                                  \
 
 #define FILE_TAG_INVALID                                                    \
-  (NULL)                                                                    \
+  (struct od_port_file_data){NULL}                                          \
 
 #define FILE_CLOSE(filename_tag)                                            \
-  fclose(filename_tag)                                                      \
+  fclose(filename_tag.f)                                                    \
 
 #define FILE_DELETE(filename)                                               \
   unlink(filename)                                                          \
 
 #define FILE_READ(filename_tag, buffer, size)                               \
-  fread(buffer, 1, size, filename_tag)                                      \
+  fread(buffer, 1, size, filename_tag.f)                                    \
 
 #define FILE_WRITE(filename_tag, buffer, size)                              \
-  fwrite(buffer, 1, size, filename_tag)                                     \
+  fwrite(buffer, 1, size, filename_tag.f)                                   \
 
 #define FILE_SEEK(filename_tag, offset, type)                               \
-  fseek(filename_tag, offset, type)                                         \
+  fseek(filename_tag.f, offset, type)                                       \
 
 #define FILE_TELL(filename_tag)                                             \
-  ftell(filename_tag)                                                       \
+  ftell(filename_tag.f)                                                     \
 
 #define FILE_GETS(current_line, filename_tag)                               \
-  fgets(current_line, 256, filename_tag)                                    \
+  fgets(current_line, 256, filename_tag.f)                                  \
 
 #include "draw.h"
 #include "gui.h"
