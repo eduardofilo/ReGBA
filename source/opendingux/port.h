@@ -14,6 +14,8 @@ typedef uint64_t u64;
 
 struct od_port_file_data {
 	FILE *f;
+	char *fn_dup;
+	unsigned int write_temp :1;
 };
 
 typedef struct od_port_file_data FILE_TAG_TYPE;
@@ -45,7 +47,22 @@ typedef struct timespec timespec;
 #define FILE_OPEN_WRITE ("wb")
 
 #define FILE_OPEN(filename_tag, filename, mode)                             \
-  filename_tag.f = fopen(filename, FILE_OPEN_##mode)                        \
+  FILE_OPEN_FOR_##mode(filename_tag, filename)                              \
+
+#define FILE_OPEN_FOR_WRITE(filename_tag, filename)                         \
+  do {                                                                      \
+    char __filename[MAX_PATH + 1];                                          \
+    filename_tag.fn_dup = strndup(filename, MAX_PATH + 1);                  \
+    snprintf(__filename, sizeof(__filename), "%s.tmp", filename);           \
+    filename_tag.f = fopen(__filename, FILE_OPEN_WRITE);                    \
+    filename_tag.write_temp = 1;                                            \
+  } while (0)                                                               \
+
+#define FILE_OPEN_FOR_READ(filename_tag, filename)                          \
+  do {                                                                      \
+    filename_tag.f = fopen(filename, FILE_OPEN_READ);                       \
+    filename_tag.write_temp = 0;                                            \
+  } while (0)                                                               \
 
 #define FILE_CHECK_VALID(filename_tag)                                      \
   (filename_tag.f != NULL)                                                  \
@@ -54,7 +71,17 @@ typedef struct timespec timespec;
   (struct od_port_file_data){NULL}                                          \
 
 #define FILE_CLOSE(filename_tag)                                            \
-  fclose(filename_tag.f)                                                    \
+  do {                                                                      \
+    if (filename_tag.write_temp) {                                          \
+      char __filename[MAX_PATH + 1];                                        \
+      snprintf(__filename, sizeof(__filename), "%s.tmp", filename_tag.fn_dup); \
+      fclose(filename_tag.f);                                               \
+      rename(__filename, filename_tag.fn_dup);                              \
+      free(filename_tag.fn_dup);                                            \
+    } else {                                                                \
+      fclose(filename_tag.f);                                               \
+    }                                                                       \
+  } while (0)                                                               \
 
 #define FILE_DELETE(filename)                                               \
   unlink(filename)                                                          \
