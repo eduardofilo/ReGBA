@@ -79,7 +79,7 @@ void ReGBA_UnmapEntireROM(void* Mapping)
 #  if TRACE_MEMORY
 	ReGBA_Trace("I: Unmapped the previous ROM from memory");
 #  endif
-	MappedFile = NULL;
+	MappedFile = FILE_TAG_INVALID;
 	MappedFileSize = 0;
 #elif defined LOAD_ALL_ROM
 	free(Mapping);

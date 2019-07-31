@@ -2521,7 +2521,7 @@ static bool lookup_game_config(char *gamepak_title, char *gamepak_code, char *ga
 				{
 					if(!strcasecmp(current_variable, "game_name"))
 					{
-						fclose(config_file);
+						FILE_CLOSE(config_file);
 						return 0;
 					}
 
@@ -2650,7 +2650,7 @@ ssize_t load_gamepak(const char* file_path)
 	ssize_t file_size;
 
 	FILE_OPEN(fd, file_path, READ);
-	if (fd)
+	if (FILE_CHECK_VALID(fd))
 	{
 		FILE_READ(fd, &magicbit, 4);
 		FILE_CLOSE(fd);

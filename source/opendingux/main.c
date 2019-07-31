@@ -602,9 +602,9 @@ size_t FILE_LENGTH(FILE_TAG_TYPE fp)
 {
   u32 length;
 
-  fseek(fp, 0, SEEK_END);
-  length = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
+  FILE_SEEK(fp, 0, SEEK_END);
+  length = FILE_TELL(fp);
+  FILE_SEEK(fp, 0, SEEK_SET);
 
   return length;
 }
