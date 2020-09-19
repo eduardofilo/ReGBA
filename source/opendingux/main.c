@@ -289,8 +289,17 @@ int main(int argc, char *argv[])
    * kludge... */
   SetMenuResolution();
   SetGameResolution();
-  if (ResolveSetting(ScaleMode, PerGameScaleMode) == hardware_2x)
-    SetGameResolution();
+  switch (ResolveSetting(ScaleMode, PerGameScaleMode))
+  {
+    case hardware_2x:
+    case hardware_2x_scanline_vert:
+    case hardware_2x_scanline_horz:
+    case hardware_2x_scanline_grid:
+      SetGameResolution();
+      break;
+    default:
+      break;
+  }
 
   execute_arm_translate(execute_cycles);
   return 0;

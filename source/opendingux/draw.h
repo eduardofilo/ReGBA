@@ -29,7 +29,10 @@ typedef enum
   fullscreen_subpixel,
   unscaled,
   hardware,
-  hardware_2x
+  hardware_2x,
+  hardware_2x_scanline_vert,
+  hardware_2x_scanline_horz,
+  hardware_2x_scanline_grid
 } video_scale_type;
 
 enum HorizontalAlignment {

@@ -145,11 +145,17 @@ void SetGameResolution()
 	{
 #ifdef RG350M
 		case hardware_2x:
+		case hardware_2x_scanline_vert:
+		case hardware_2x_scanline_horz:
+		case hardware_2x_scanline_grid:
 			Width  = GBA_SCREEN_WIDTH << 1;
 			Height = GBA_SCREEN_HEIGHT << 1;
 			break;
 #else
 		case hardware_2x:
+		case hardware_2x_scanline_vert:
+		case hardware_2x_scanline_horz:
+		case hardware_2x_scanline_grid:
 #endif
 		case hardware:
 			Width  = GBA_SCREEN_WIDTH;
@@ -1638,6 +1644,170 @@ static inline void gba_convert_2x(uint16_t* out_buf, uint16_t* in_buf,
 	}
 }
 
+/* Equivalent to gba_convert_2x(), but adds
+ * vertical scanlines */
+static inline void gba_convert_2x_scanline_vert(uint16_t* out_buf, uint16_t* in_buf,
+	uint32_t in_pitch, uint32_t out_pitch)
+{
+	uint16_t *src      = in_buf;
+	uint16_t *dst      = out_buf;
+	/* Buffers are 16bit -> divide by 2 */
+	uint32_t src_width = in_pitch  >> 1;
+	uint32_t dst_width = out_pitch >> 1;
+	size_t x, y;
+
+	for (y = 0; y < GBA_SCREEN_HEIGHT; y++)
+	{
+		uint16_t *dst_ptr = dst;
+
+		for (x = 0; x < GBA_SCREEN_WIDTH; x++)
+		{
+			/* Get raw pixel colour */
+			uint32_t color = (uint32_t)*(src + x);
+
+			/* Split into RGB components */
+			uint32_t r = color       & 0x1F;
+			uint32_t g = color >>  5 & 0x1F;
+			uint32_t b = color >> 10 & 0x1F;
+
+			/* Get raw scanline colour
+			 * (raw colour * 0.75) */
+			uint32_t scanline_color =
+               ((r - (r >> 2))      ) |
+               ((g - (g >> 2)) <<  5) |
+               ((b - (b >> 2)) << 10);
+
+			/* Convert colours */
+			color          = bgr555_to_native_16(color);
+			scanline_color = bgr555_to_native_16(scanline_color);
+
+			/* Generate row colours
+			 * - Vertical scanlines, so each row is
+			 *   identical: <colour>|<scanline_color>
+			 * - Doubled up to 32bit, so we can set
+			 *   two destination pixels at once) */
+			uint32_t row_color = (color << 16) | scanline_color;
+
+			/* Assign colours for current row */
+			*(uint32_t*)dst_ptr = row_color;
+
+			/* Assign colours for next row */
+			*(uint32_t*)(dst_ptr + dst_width) = row_color;
+
+			dst_ptr += 2;
+		}
+
+		src += src_width;
+		dst += dst_width << 1;
+	}
+}
+
+/* Equivalent to gba_convert_2x(), but adds
+ * horizontal scanlines */
+static inline void gba_convert_2x_scanline_horz(uint16_t* out_buf, uint16_t* in_buf,
+	uint32_t in_pitch, uint32_t out_pitch)
+{
+	uint16_t *src      = in_buf;
+	uint16_t *dst      = out_buf;
+	/* Buffers are 16bit -> divide by 2 */
+	uint32_t src_width = in_pitch  >> 1;
+	uint32_t dst_width = out_pitch >> 1;
+	size_t x, y;
+
+	for (y = 0; y < GBA_SCREEN_HEIGHT; y++)
+	{
+		uint16_t *dst_ptr = dst;
+
+		for (x = 0; x < GBA_SCREEN_WIDTH; x++)
+		{
+			/* Get raw pixel colour */
+			uint32_t color = (uint32_t)*(src + x);
+
+			/* Split into RGB components */
+			uint32_t r = color       & 0x1F;
+			uint32_t g = color >>  5 & 0x1F;
+			uint32_t b = color >> 10 & 0x1F;
+
+			/* Get raw scanline colour
+			 * (raw colour * 0.75) */
+			uint32_t scanline_color =
+               ((r - (r >> 2))      ) |
+               ((g - (g >> 2)) <<  5) |
+               ((b - (b >> 2)) << 10);
+
+			/* Convert colours */
+			color          = bgr555_to_native_16(color);
+			scanline_color = bgr555_to_native_16(scanline_color);
+
+			/* Assign colours for current row
+			 * - Non-scanline: <colour>|<colour> */
+			*(uint32_t*)dst_ptr = (color << 16) | color;
+
+			/* Assign colours for next row
+			 * - Scanline: <scanline_color>|<scanline_color> */
+			*(uint32_t*)(dst_ptr + dst_width) = (scanline_color << 16) | scanline_color;
+
+			dst_ptr += 2;
+		}
+
+		src += src_width;
+		dst += dst_width << 1;
+	}
+}
+
+/* Equivalent to gba_convert_2x(), but adds
+ * a simple grid effect */
+static inline void gba_convert_2x_scanline_grid(uint16_t* out_buf, uint16_t* in_buf,
+	uint32_t in_pitch, uint32_t out_pitch)
+{
+	uint16_t *src      = in_buf;
+	uint16_t *dst      = out_buf;
+	/* Buffers are 16bit -> divide by 2 */
+	uint32_t src_width = in_pitch  >> 1;
+	uint32_t dst_width = out_pitch >> 1;
+	size_t x, y;
+
+	for (y = 0; y < GBA_SCREEN_HEIGHT; y++)
+	{
+		uint16_t *dst_ptr = dst;
+
+		for (x = 0; x < GBA_SCREEN_WIDTH; x++)
+		{
+			/* Get raw pixel colour */
+			uint32_t color = (uint32_t)*(src + x);
+
+			/* Split into RGB components */
+			uint32_t r = color       & 0x1F;
+			uint32_t g = color >>  5 & 0x1F;
+			uint32_t b = color >> 10 & 0x1F;
+
+			/* Get raw scanline colour
+			 * (raw colour * 0.75) */
+			uint32_t scanline_color =
+               ((r - (r >> 2))      ) |
+               ((g - (g >> 2)) <<  5) |
+               ((b - (b >> 2)) << 10);
+
+			/* Convert colours */
+			color          = bgr555_to_native_16(color);
+			scanline_color = bgr555_to_native_16(scanline_color);
+
+			/* Assign colours for current row
+			 * - <colour>|<scanline_color> */
+			*(uint32_t*)dst_ptr = (color << 16) | scanline_color;
+
+			/* Assign colours for next row
+			 * - <scanline_color>|<scanline_color> */
+			*(uint32_t*)(dst_ptr + dst_width) = (scanline_color << 16) | scanline_color;
+
+			dst_ptr += 2;
+		}
+
+		src += src_width;
+		dst += dst_width << 1;
+	}
+}
+
 /* Downscales an image by half in width and in height; also does color
  * conversion using the function above.
  * Input:
@@ -1727,6 +1897,9 @@ void ApplyScaleMode(video_scale_type NewMode)
 		case fullscreen_bilinear:
 		case hardware:
 		case hardware_2x:
+		case hardware_2x_scanline_vert:
+		case hardware_2x_scanline_horz:
+		case hardware_2x_scanline_grid:
 			break;
 	}
 }
@@ -1775,6 +1948,9 @@ void ReGBA_RenderScreen(void)
 			case hardware: /* Hardware, when there's no hardware to scale
 			                  images, acts as unscaled */
 			case hardware_2x:
+			case hardware_2x_scanline_vert:
+			case hardware_2x_scanline_horz:
+			case hardware_2x_scanline_grid:
 #endif
 			case unscaled:
 				{
@@ -1824,8 +2000,23 @@ void ReGBA_RenderScreen(void)
 			case hardware_2x:
 				gba_convert_2x(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
 				break;
+
+			case hardware_2x_scanline_vert:
+				gba_convert_2x_scanline_vert(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
+				break;
+
+			case hardware_2x_scanline_horz:
+				gba_convert_2x_scanline_horz(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
+				break;
+
+			case hardware_2x_scanline_grid:
+				gba_convert_2x_scanline_grid(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
+				break;
 #else
 			case hardware_2x:
+			case hardware_2x_scanline_vert:
+			case hardware_2x_scanline_horz:
+			case hardware_2x_scanline_grid:
 #endif
 			case hardware:
 				gba_convert(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
