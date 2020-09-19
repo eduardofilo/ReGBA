@@ -34,6 +34,9 @@ DEFS        := -DGCW_ZERO -DMIPS_XBURST                                       \
 ifdef RG350
 	DEFS += -DRG350
 	DEFS += -DUSE_MMAP
+ifdef RG350M
+	DEFS += -DRG350M
+endif
 else
 	DEFS += -DLOAD_ALL_ROM
 endif
@@ -50,7 +53,7 @@ CFLAGS      := $(SDL_CFLAGS) -mno-abicalls -Wall -Wno-unused-variable \
 ASFLAGS     := $(CFLAGS) -D__ASSEMBLY__
 LDFLAGS     := $(SDL_LIBS) -lpthread -lz -lm -lpng -s
 
-DATA_TO_CLEAN := .opk_data $(TARGET).opk
+DATA_TO_CLEAN := .opk_data $(TARGET)_rg350.opk
 
 include ../Makefile.rules
 
@@ -58,9 +61,9 @@ include ../Makefile.rules
 
 all: $(TARGET)
 
-opk: $(TARGET).opk
+opk: $(TARGET)_rg350.opk
 
-$(TARGET).opk: $(TARGET)
+$(TARGET)_rg350.opk: $(TARGET)
 	$(SUM) "  OPK     $@"
 	$(CMD)rm -rf .opk_data
 	$(CMD)cp -r data .opk_data

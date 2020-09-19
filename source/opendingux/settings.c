@@ -198,6 +198,14 @@ static void FixUpSettings()
 		PerGameHotkeys[3] = 0;
 	if (IsImpossibleHotkey(PerGameHotkeys[4]))
 		PerGameHotkeys[4] = 0;
+
+#ifndef RG350M
+	if (ScaleMode > hardware)
+		ScaleMode = hardware;
+
+	if (PerGameScaleMode > hardware)
+		PerGameScaleMode = hardware;
+#endif
 }
 
 void ReGBA_LoadSettings(char *cfg_name, bool PerGame)

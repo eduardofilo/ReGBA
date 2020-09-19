@@ -139,17 +139,28 @@ void SetGameResolution()
 {
 #ifdef GCW_ZERO
 	video_scale_type ResolvedScaleMode = ResolveSetting(ScaleMode, PerGameScaleMode);
-	unsigned int Width = GBA_SCREEN_WIDTH, Height = GBA_SCREEN_HEIGHT;
-	if (ResolvedScaleMode == hardware_2x)
+	unsigned int Width, Height;
+
+	switch (ResolvedScaleMode)
 	{
-		Width = GBA_SCREEN_WIDTH << 1;
-		Height = GBA_SCREEN_HEIGHT << 1;
+#ifdef RG350M
+		case hardware_2x:
+			Width  = GBA_SCREEN_WIDTH << 1;
+			Height = GBA_SCREEN_HEIGHT << 1;
+			break;
+#else
+		case hardware_2x:
+#endif
+		case hardware:
+			Width  = GBA_SCREEN_WIDTH;
+			Height = GBA_SCREEN_HEIGHT;
+			break;
+		default:
+			Width = SCREEN_WIDTH;
+			Height = SCREEN_HEIGHT;
+			break;
 	}
-	else if (ResolvedScaleMode != hardware)
-	{
-		Width = SCREEN_WIDTH;
-		Height = SCREEN_HEIGHT;
-	}
+
 	if (SDL_MUSTLOCK(OutputSurface))
 		SDL_UnlockSurface(OutputSurface);
 	OutputSurface = SDL_SetVideoMode(Width, Height, 
@@ -1809,12 +1820,15 @@ void ReGBA_RenderScreen(void)
 				break;
 
 #ifdef GCW_ZERO
-			case hardware:
-				gba_convert(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
-				break;
-
+#ifdef RG350M
 			case hardware_2x:
 				gba_convert_2x(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
+				break;
+#else
+			case hardware_2x:
+#endif
+			case hardware:
+				gba_convert(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
 				break;
 #endif
 #endif /* NO_SCALING */

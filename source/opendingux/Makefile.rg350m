@@ -1,6 +1,10 @@
+RG350=1
+RG350M=1
+
 TARGET      := regba
 
-CROSS_COMPILE ?= mipsel-linux-
+TOOLCHAIN_DIR := /opt/gcw0-toolchain/usr/bin
+CROSS_COMPILE ?= $(TOOLCHAIN_DIR)/mipsel-linux-
 CC          := $(CROSS_COMPILE)gcc
 STRIP       := $(CROSS_COMPILE)strip
 
@@ -28,10 +32,6 @@ DEFS        := -DGCW_ZERO -DMIPS_XBURST                                       \
                -DSCREEN_WIDTH=320 -DSCREEN_HEIGHT=240                         \
                -DGIT_VERSION=$(shell git describe --always)
 
-ifdef PLAYGO
-	DEFS += -DPLAYGO
-	DEFS += -DUSE_MMAP
-else
 ifdef RG350
 	DEFS += -DRG350
 	DEFS += -DUSE_MMAP
@@ -40,7 +40,6 @@ ifdef RG350M
 endif
 else
 	DEFS += -DLOAD_ALL_ROM
-endif
 endif
 HAS_MIPS32R2 := $(shell echo | $(CC) -dM -E - |grep _MIPS_ARCH_MIPS32R2)
 ifneq ($(HAS_MIPS32R2),)
@@ -55,7 +54,7 @@ CFLAGS      := $(SDL_CFLAGS) -mno-abicalls -Wall -Wno-unused-variable \
 ASFLAGS     := $(CFLAGS) -D__ASSEMBLY__
 LDFLAGS     := $(SDL_LIBS) -lpthread -lz -lm -lpng -s
 
-DATA_TO_CLEAN := .opk_data $(TARGET).opk
+DATA_TO_CLEAN := .opk_data $(TARGET)_rg350m.opk
 
 include ../Makefile.rules
 
@@ -63,9 +62,9 @@ include ../Makefile.rules
 
 all: $(TARGET)
 
-opk: $(TARGET).opk
+opk: $(TARGET)_rg350m.opk
 
-$(TARGET).opk: $(TARGET)
+$(TARGET)_rg350m.opk: $(TARGET)
 	$(SUM) "  OPK     $@"
 	$(CMD)rm -rf .opk_data
 	$(CMD)cp -r data .opk_data
@@ -73,7 +72,7 @@ $(TARGET).opk: $(TARGET)
 	$(CMD)cp ../../bios/gba_bios.bin .opk_data
 	$(CMD)cp $< .opk_data/regba
 	$(CMD)$(STRIP) .opk_data/regba
-	$(CMD)mksquashfs .opk_data $@ -all-root -noappend -no-exports -no-xattrs -no-progress >/dev/null
+	$(CMD)$(TOOLCHAIN_DIR)/mksquashfs .opk_data $@ -all-root -noappend -no-exports -no-xattrs -no-progress >/dev/null
 
 # The two below declarations ensure that editing a .c file recompiles only that
 # file, but editing a .h file recompiles everything.
