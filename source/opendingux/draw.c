@@ -217,7 +217,12 @@ bool ApplyBorder(const char* Filename)
 	return Result;
 }
 
-static inline void gba_apply_color_correction(void)
+/***************************************************************************
+ *   Stand-alone video post processing functions                           *
+ *   (colour correction, interframe blending)                              *
+ ***************************************************************************/
+
+static inline void video_post_process_cc(void)
 {
 	uint16_t *src = GBAScreen;
 	uint16_t *dst = GBAScreenProcessed;
@@ -240,7 +245,7 @@ static inline void gba_apply_color_correction(void)
 	}
 }
 
-static inline void gba_mix_frames(bool color_correction)
+static inline void video_post_process_mix(void)
 {
 	uint16_t *src_curr = GBAScreen;
 	uint16_t *src_prev = GBAScreenPrev;
@@ -271,18 +276,59 @@ static inline void gba_mix_frames(bool color_correction)
 			uint16_t g_mix    = (g_curr >> 1) + (g_prev >> 1) + (((g_curr & 0x1) + (g_prev & 0x1)) >> 1);
 			uint16_t b_mix    = (b_curr >> 1) + (b_prev >> 1) + (((b_curr & 0x1) + (b_prev & 0x1)) >> 1);
 
-			/* Convert back to BGR555 */
-			uint16_t rgb_mix  = b_mix << 10 | g_mix << 5 | r_mix;
-
-			/* Assign colours for current frame */
-			*(dst + x)        = color_correction ?
-					*(CcLUT + rgb_mix) : rgb_mix;
+			/* Convert back to BGR555 and assign
+			 * colours for current frame */
+			*(dst + x)        = b_mix << 10 | g_mix << 5 | r_mix;
 		}
 		src_curr += GBA_SCREEN_WIDTH;
 		src_prev += GBA_SCREEN_WIDTH;
 		dst      += GBA_SCREEN_WIDTH;
 	}
 }
+
+static inline void video_post_process_cc_mix(void)
+{
+	uint16_t *src_curr = GBAScreen;
+	uint16_t *src_prev = GBAScreenPrev;
+	uint16_t *dst      = GBAScreenProcessed;
+	size_t x, y;
+
+	for (y = 0; y < GBA_SCREEN_HEIGHT; y++)
+	{
+		for (x = 0; x < GBA_SCREEN_WIDTH; x++)
+		{
+			/* Get colours from current + previous frames (BGR555) */
+			uint16_t rgb_curr = *(src_curr + x);
+			uint16_t rgb_prev = *(src_prev + x);
+
+			uint16_t r_curr   = rgb_curr       & 0x1F;
+			uint16_t g_curr   = rgb_curr >>  5 & 0x1F;
+			uint16_t b_curr   = rgb_curr >> 10 & 0x1F;
+
+			uint16_t r_prev   = rgb_prev       & 0x1F;
+			uint16_t g_prev   = rgb_prev >>  5 & 0x1F;
+			uint16_t b_prev   = rgb_prev >> 10 & 0x1F;
+
+			/* Store colours for next frame */
+			*(src_prev + x)   = rgb_curr;
+
+			/* Mix colours */
+			uint16_t r_mix    = (r_curr >> 1) + (r_prev >> 1) + (((r_curr & 0x1) + (r_prev & 0x1)) >> 1);
+			uint16_t g_mix    = (g_curr >> 1) + (g_prev >> 1) + (((g_curr & 0x1) + (g_prev & 0x1)) >> 1);
+			uint16_t b_mix    = (b_curr >> 1) + (b_prev >> 1) + (((b_curr & 0x1) + (b_prev & 0x1)) >> 1);
+
+			/* Convert back to BGR555, perform colour
+			 * correction and assign colours for current
+			 * frame */
+			*(dst + x)        = *(CcLUT + (b_mix << 10 | g_mix << 5 | r_mix));
+		}
+		src_curr += GBA_SCREEN_WIDTH;
+		src_prev += GBA_SCREEN_WIDTH;
+		dst      += GBA_SCREEN_WIDTH;
+	}
+}
+
+/************** END *********************/
 
 /***************************************************************************
  *   Scaler copyright (C) 2013 by Paul Cercueil                            *
@@ -1918,30 +1964,60 @@ void ReGBA_RenderScreen(void)
 		Stats.TotalRenderedFrames++;
 		Stats.RenderedFrames++;
 
-		/* Perform colour correction/frame mixing,
-		 * if required */
+		/* Get user settings */
 		uint32_t ResolvedColorCorrection    = ResolveSetting(
 				ColorCorrection, PerGameColorCorrection);
 		uint32_t ResolvedInterframeBlending = ResolveSetting(
 				InterframeBlending, PerGameInterframeBlending);
+		video_scale_type ResolvedScaleMode = ResolveSetting(
+				ScaleMode, PerGameScaleMode);
 
-		if (ResolvedInterframeBlending)
+		/* Determine video post processing type,
+		 * if any */
+		video_post_process_type PostProcessType =
+				(ResolvedInterframeBlending << 1) |
+						ResolvedColorCorrection;
+
+		/* Apply post processing
+		 * > Note: It would be possible move the
+		 *   post processing into the video scaling
+		 *   functions themselves, to avoid the
+		 *   necessity of having to loop through
+		 *   all the pixels twice. However, after
+		 *   some research, it seems that increasing
+		 *   the complexity of the post-processing
+		 *   for loops may in fact increase the number
+		 *   of cache misses. Since every game already
+		 *   seems to run at full speed on the RG350M,
+		 *   and I have no profiling tools to run on
+		 *   the device, further optimisation does not
+		 *   seem worthwhile... */
+		switch (PostProcessType)
 		{
-			gba_mix_frames((bool)ResolvedColorCorrection);
-			GBAScreenBuf = GBAScreenProcessed;
-		}
-		else if (ResolvedColorCorrection)
-		{
-			gba_apply_color_correction();
-			GBAScreenBuf = GBAScreenProcessed;
+			case post_process_type_cc:
+				video_post_process_cc();
+				GBAScreenBuf = GBAScreenProcessed;
+				break;
+			case post_process_type_mix:
+				video_post_process_mix();
+				GBAScreenBuf = GBAScreenProcessed;
+				break;
+			case post_process_type_cc_mix:
+				video_post_process_cc_mix();
+				GBAScreenBuf = GBAScreenProcessed;
+				break;
+			default:
+				break;
 		}
 
-		video_scale_type ResolvedScaleMode = ResolveSetting(ScaleMode, PerGameScaleMode);
+		/* (Re-)Initialise video scaling, if required */
 		if (FramesBordered < 3)
 		{
 			ApplyScaleMode(ResolvedScaleMode);
 			FramesBordered++;
 		}
+
+		/* Apply video scaling routine */
 		switch (ResolvedScaleMode)
 		{
 #ifndef GCW_ZERO

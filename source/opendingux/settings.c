@@ -206,6 +206,15 @@ static void FixUpSettings()
 	if (PerGameScaleMode > hardware)
 		PerGameScaleMode = hardware;
 #endif
+
+	/* Colour correction and interframe blending options
+	 * are converted to an enum via bit manipulation. It
+	 * is therefore essential that the associated settings
+	 * remain within their correct bounds */
+	ColorCorrection           = (ColorCorrection > 1)           ? 1 : ColorCorrection;
+	PerGameColorCorrection    = (PerGameColorCorrection > 2)    ? 2 : PerGameColorCorrection;
+	InterframeBlending        = (InterframeBlending > 1)        ? 1 : InterframeBlending;
+	PerGameInterframeBlending = (PerGameInterframeBlending > 2) ? 2 : PerGameInterframeBlending;
 }
 
 void ReGBA_LoadSettings(char *cfg_name, bool PerGame)

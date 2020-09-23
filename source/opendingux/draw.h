@@ -21,7 +21,15 @@ extern uint_fast8_t FramesBordered;
 
 typedef enum
 {
-  scaled_aspect,
+  post_process_type_none = 0,
+  post_process_type_cc,
+  post_process_type_mix,
+  post_process_type_cc_mix
+} video_post_process_type;
+
+typedef enum
+{
+  scaled_aspect = 0,
   fullscreen,
   scaled_aspect_bilinear,
   fullscreen_bilinear,
@@ -36,15 +44,15 @@ typedef enum
 } video_scale_type;
 
 enum HorizontalAlignment {
-	LEFT,
-	CENTER,
-	RIGHT
+  LEFT = 0,
+  CENTER,
+  RIGHT
 };
 
 enum VerticalAlignment {
-	TOP,
-	MIDDLE,
-	BOTTOM
+  TOP = 0,
+  MIDDLE,
+  BOTTOM
 };
 
 extern video_scale_type PerGameScaleMode;
