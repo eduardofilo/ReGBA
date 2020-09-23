@@ -295,6 +295,7 @@ int main(int argc, char *argv[])
     case hardware_2x_scanline_vert:
     case hardware_2x_scanline_horz:
     case hardware_2x_scanline_grid:
+    case hardware_scale2x:
       SetGameResolution();
       break;
     default:

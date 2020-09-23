@@ -148,6 +148,7 @@ void SetGameResolution()
 		case hardware_2x_scanline_vert:
 		case hardware_2x_scanline_horz:
 		case hardware_2x_scanline_grid:
+		case hardware_scale2x:
 			Width  = GBA_SCREEN_WIDTH << 1;
 			Height = GBA_SCREEN_HEIGHT << 1;
 			break;
@@ -156,6 +157,7 @@ void SetGameResolution()
 		case hardware_2x_scanline_vert:
 		case hardware_2x_scanline_horz:
 		case hardware_2x_scanline_grid:
+		case hardware_scale2x:
 #endif
 		case hardware:
 			Width  = GBA_SCREEN_WIDTH;
@@ -1854,6 +1856,65 @@ static inline void gba_convert_2x_scanline_grid(uint16_t* out_buf, uint16_t* in_
 	}
 }
 
+/* Equivalent to gba_convert(), but performs
+ * additional 2x scaling via the Scale2x
+ * algorithm */
+static inline void gba_convert_scale2x(uint16_t* out_buf, uint16_t* in_buf,
+	uint32_t in_pitch, uint32_t out_pitch)
+{
+	/* Buffers are 16bit -> divide by 2 */
+	uint32_t src_width = in_pitch  >> 1;
+	uint32_t dst_width = out_pitch >> 1;
+	uint16_t *src      = in_buf;
+	uint16_t *out0     = out_buf;
+	uint16_t *out1     = out_buf + dst_width;
+	size_t x, y;
+
+	for (y = 0; y < GBA_SCREEN_HEIGHT; y++)
+	{
+		/* Determine offsets of previous/next source lines */
+		uint32_t line_prev = (y == 0)                     ? 0 : src_width;
+		uint32_t line_next = (y == GBA_SCREEN_HEIGHT - 1) ? 0 : src_width;
+
+		for (x = 0; x < GBA_SCREEN_WIDTH; x++)
+		{
+			/* Get sample points */
+			uint16_t A = *(src - line_prev);
+			uint16_t B = (x > 0) ? *(src - 1) : *src;
+			uint16_t C = *src;
+			uint16_t D = (x < GBA_SCREEN_WIDTH - 1) ? *(src + 1) : *src;
+			uint16_t E = *(src++ + line_next);
+
+			/* Convert to native colour format */
+			A = bgr555_to_native_16(A);
+			B = bgr555_to_native_16(B);
+			C = bgr555_to_native_16(C);
+			D = bgr555_to_native_16(D);
+			E = bgr555_to_native_16(E);
+
+			/* Apply pixel expansion algorithm */
+			if (A != E && B != D)
+			{
+				*out0++ = (A == B ? A : C);
+				*out0++ = (A == D ? A : C);
+				*out1++ = (E == B ? E : C);
+				*out1++ = (E == D ? E : C);
+			}
+			else
+			{
+				*out0++ = C;
+				*out0++ = C;
+				*out1++ = C;
+				*out1++ = C;
+			}
+		}
+
+		src  += src_width - GBA_SCREEN_WIDTH;
+		out0 += (dst_width << 1) - (GBA_SCREEN_WIDTH << 1);
+		out1 += (dst_width << 1) - (GBA_SCREEN_WIDTH << 1);
+	}
+}
+
 /* Downscales an image by half in width and in height; also does color
  * conversion using the function above.
  * Input:
@@ -1946,6 +2007,7 @@ void ApplyScaleMode(video_scale_type NewMode)
 		case hardware_2x_scanline_vert:
 		case hardware_2x_scanline_horz:
 		case hardware_2x_scanline_grid:
+		case hardware_scale2x:
 			break;
 	}
 }
@@ -2027,6 +2089,7 @@ void ReGBA_RenderScreen(void)
 			case hardware_2x_scanline_vert:
 			case hardware_2x_scanline_horz:
 			case hardware_2x_scanline_grid:
+			case hardware_scale2x:
 #endif
 			case unscaled:
 				{
@@ -2088,11 +2151,16 @@ void ReGBA_RenderScreen(void)
 			case hardware_2x_scanline_grid:
 				gba_convert_2x_scanline_grid(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
 				break;
+
+			case hardware_scale2x:
+				gba_convert_scale2x(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
+				break;
 #else
 			case hardware_2x:
 			case hardware_2x_scanline_vert:
 			case hardware_2x_scanline_horz:
 			case hardware_2x_scanline_grid:
+			case hardware_scale2x:
 #endif
 			case hardware:
 				gba_convert(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
