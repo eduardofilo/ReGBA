@@ -80,6 +80,7 @@ static uint32_t SelectedState = 0;
 
 static struct Menu PerGameMainMenu;
 static struct Menu DisplayMenu;
+static struct Menu AudioMenu;
 static struct Menu InputMenu;
 static struct Menu HotkeyMenu;
 static struct Menu ErrorScreen;
@@ -1279,6 +1280,29 @@ static struct Menu DisplayMenu = {
 		&DisplayMenu_Frameskip, &DisplayMenu_FastForwardTarget, NULL }
 };
 
+// -- Audio Settings --
+static struct MenuEntry PerGameAudioMenu_FastForwardVolume = {
+	ENTRY_OPTION("fast_forward_volume", "Fast Forward Volume", &PerGameFastForwardVolume),
+	.ChoiceCount = 5, .Choices = { { "No override", "" }, { "100%", "100" }, { "50%", "50" }, { "25%", "25" }, { "Mute", "0" } }
+};
+static struct MenuEntry AudioMenu_FastForwardVolume = {
+	ENTRY_OPTION("fast_forward_volume", "Fast Forward Volume", &FastForwardVolume),
+	.ChoiceCount = 4, .Choices = { { "100%", "100" }, { "50%", "50" }, { "25%", "25" }, { "Mute", "0" } }
+};
+
+static struct Menu PerGameAudioMenu = {
+	.Parent = &PerGameMainMenu, .Title = "Audio settings",
+	MENU_PER_GAME,
+	.AlternateVersion = &AudioMenu,
+	.Entries = { &PerGameAudioMenu_FastForwardVolume, NULL }
+};
+
+static struct Menu AudioMenu = {
+	.Parent = &MainMenu, .Title = "Audio settings",
+	.AlternateVersion = &PerGameAudioMenu,
+	.Entries = { &AudioMenu_FastForwardVolume, NULL }
+};
+
 // -- Input Settings --
 static struct MenuEntry PerGameInputMenu_A = {
 	ENTRY_OPTION("gba_a", "GBA A", &PerGameKeypadRemapping[0]),
@@ -1497,6 +1521,13 @@ static struct MenuEntry MainMenu_Display = {
 	ENTRY_SUBMENU("Display settings...", &DisplayMenu)
 };
 
+static struct MenuEntry PerGameMainMenu_Audio = {
+	ENTRY_SUBMENU("Audio settings...", &PerGameAudioMenu)
+};
+static struct MenuEntry MainMenu_Audio = {
+	ENTRY_SUBMENU("Audio settings...", &AudioMenu)
+};
+
 static struct MenuEntry PerGameMainMenu_Input = {
 	ENTRY_SUBMENU("Input settings...", &PerGameInputMenu)
 };
@@ -1539,18 +1570,18 @@ static struct Menu PerGameMainMenu = {
 	MENU_PER_GAME,
 	.AlternateVersion = &MainMenu,
 #if SCREEN_HEIGHT >= 240
-	.Entries = { &PerGameMainMenu_Display, &PerGameMainMenu_Input, &PerGameMainMenu_Hotkey, &Strut, &Strut, &Strut, &Strut, &Strut, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
+	.Entries = { &PerGameMainMenu_Display, &PerGameMainMenu_Audio, &PerGameMainMenu_Input, &PerGameMainMenu_Hotkey, &Strut, &Strut, &Strut, &Strut, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
 #else
-	.Entries = { &PerGameMainMenu_Display, &PerGameMainMenu_Input, &PerGameMainMenu_Hotkey, &Strut, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
+	.Entries = { &PerGameMainMenu_Display, &PerGameMainMenu_Audio, &PerGameMainMenu_Input, &PerGameMainMenu_Hotkey, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
 #endif
 };
 struct Menu MainMenu = {
 	.Parent = NULL, .Title = "ReGBA Main Menu",
 	.AlternateVersion = &PerGameMainMenu,
 #if SCREEN_HEIGHT >= 240
-	.Entries = { &MainMenu_Display, &MainMenu_Input, &MainMenu_Hotkey, &Strut, &MainMenu_SavedStates, &Strut, &Strut, &MainMenu_Debug, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
+	.Entries = { &MainMenu_Display, &MainMenu_Audio, &MainMenu_Input, &MainMenu_Hotkey, &Strut, &MainMenu_SavedStates, &Strut, &MainMenu_Debug, &Strut, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
 #else
-	.Entries = { &MainMenu_Display, &MainMenu_Input, &MainMenu_Hotkey, &MainMenu_SavedStates, &MainMenu_Debug, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
+	.Entries = { &MainMenu_Display, &MainMenu_Audio, &MainMenu_Input, &MainMenu_Hotkey, &MainMenu_SavedStates, &MainMenu_Debug, &MainMenu_Reset, &MainMenu_Return, &MainMenu_Exit, NULL }
 #endif
 };
 

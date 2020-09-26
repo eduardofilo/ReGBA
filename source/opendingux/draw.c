@@ -2206,6 +2206,10 @@ void ReGBA_RenderScreen(void)
 	{
 		FastForwardFrameskipControl--;
 		VideoFastForwarded = (VideoFastForwarded + 1) & 0xFF;
+
+		/* Copy current user-set fast forward volume
+		 * level into 'thread safe' variable */
+		FastForwardVolumeLevel = ResolveSetting(FastForwardVolume, PerGameFastForwardVolume);
 	}
 	else
 	{

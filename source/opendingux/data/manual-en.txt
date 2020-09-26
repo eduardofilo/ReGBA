@@ -47,6 +47,9 @@ In the Main Menu or any submenu containing options, you can press the Select key
 > Frame skipping: "Automatic" attempts to skip the least amount of frames necessary for the audio to be flawless. Manual selections exist up to 3 (~15 FPS). Most games are fine with automatic frame skipping.
 > Fast-forward target: When fast-forwarding the game, this specifies the maximum speedup to allow, from 2x to 6x. If emulating a demanding game, the actual speedup may be less.
 
+- Audio Settings -
+> Fast Forward Volume: Specifies audio volume level when fast-forwarding the game.
+
 - Input Settings -
 > GBA buttons: Press A on one of these, and you can set a new button on your device to be used for triggering it on the GBA. These mappings are mandatory; you cannot have a mapping such that nothing on your device can trigger a GBA button. However, you can set multiple GBA buttons to be triggered by one on your device.
 > Rapid-fire buttons: These mappings are optional; you can press A, then two buttons at once to clear them. Rapid-fire buttons press and release their GBA button at 30 Hz: they are pressed for 1/60 of a second, then unpressed for the same time.

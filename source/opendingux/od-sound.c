@@ -5,7 +5,15 @@
 
 volatile unsigned int AudioFastForwarded;
 
-#define DAMPEN_SAMPLE_COUNT (AUDIO_OUTPUT_BUFFER_SIZE / 32)
+uint32_t PerGameFastForwardVolume            = 0;
+uint32_t FastForwardVolume                   = 0;
+volatile unsigned int FastForwardVolumeLevel = 0;
+
+#ifdef RG350
+#define DAMPEN_SAMPLE_COUNT (AUDIO_OUTPUT_BUFFER_SIZE >> 4)
+#else
+#define DAMPEN_SAMPLE_COUNT (AUDIO_OUTPUT_BUFFER_SIZE >> 5)
+#endif
 
 #ifdef SOUND_TO_FILE
 FILE* WaveFile;
@@ -70,9 +78,12 @@ void feed_buffer(void *udata, Uint8 *buffer, int len)
 	unsigned int VideoFastForwardedCopy = VideoFastForwarded;
 	if (VideoFastForwardedCopy != AudioFastForwarded)
 	{
-		uint32_t SamplesToSkip = Samples - (Requested * 3 - Requested / 2);
-		ReGBA_DiscardAudioSamples(SamplesToSkip * OUTPUT_FREQUENCY_DIVISOR);
-		Samples -= SamplesToSkip;
+		int32_t SamplesToSkip = (int32_t)Samples - (Requested * 3 - Requested / 2);
+		if (SamplesToSkip > 0)
+		{
+			ReGBA_DiscardAudioSamples(SamplesToSkip * OUTPUT_FREQUENCY_DIVISOR);
+			Samples -= SamplesToSkip;
+		}
 		AudioFastForwarded = VideoFastForwardedCopy;
 		Skipped = true;
 	}
@@ -88,18 +99,46 @@ void feed_buffer(void *udata, Uint8 *buffer, int len)
 	}
 	Samples -= Requested - Requested / 2;
 
-	// If we skipped sound, dampen the transition between the two halves.
+	/* Check whether audio samples have been skipped */
 	if (Skipped)
 	{
-		for (i = 0; i < DAMPEN_SAMPLE_COUNT; i++)
+		/* FastForwardVolumeLevel:
+		 * 0: 100%
+		 * 1: 50%
+		 * 2: 25%
+		 * 3: Mute
+		 */
+		unsigned int FastForwardVolumeLevelCopy = FastForwardVolumeLevel;
+
+		if (FastForwardVolumeLevelCopy == 3)
+			memset(stream, 0, len);
+		else
 		{
-			uint_fast8_t j;
-			for (j = 0; j < 2; j++)
+			/* Dampen the transition between the two halves */
+			uint32_t dampen_sample_count_max = (Requested / 4) - 2;
+			uint32_t dampen_sample_count     = (DAMPEN_SAMPLE_COUNT < dampen_sample_count_max) ?
+					DAMPEN_SAMPLE_COUNT : dampen_sample_count_max;
+
+			for (i = 0; i < dampen_sample_count; i++)
 			{
-				stream[Requested / 2 + i * 2 + j] = (int16_t) (
-					  (int32_t) stream[Requested / 2 - i * 2 - 2 + j] * (DAMPEN_SAMPLE_COUNT - (int32_t) i) / (DAMPEN_SAMPLE_COUNT + 1)
-					+ (int32_t) stream[Requested / 2 + i * 2 + j] * ((int32_t) i + 1) / (DAMPEN_SAMPLE_COUNT + 1)
-					);
+				uint_fast8_t j;
+				for (j = 0; j < 2; j++)
+				{
+					stream[Requested / 2 + i * 2 + j] = (int16_t) (
+						  (int32_t) stream[Requested / 2 - i * 2 - 2 + j] * (1 + (dampen_sample_count - (int32_t) i) / (dampen_sample_count + 1))
+						+ (int32_t) stream[Requested / 2 + i * 2 + j] * (1 + ((int32_t) i + 1) / (dampen_sample_count + 1))
+						);
+				}
+			}
+
+			/* Attenuate overall volume, if required */
+			if (FastForwardVolumeLevelCopy > 0)
+			{
+				uint_fast8_t attenuation_shift = (FastForwardVolumeLevelCopy < 3) ?
+						FastForwardVolumeLevelCopy : 2;
+
+				for (i = 0; i < Requested << 1; i++)
+					stream[i] = stream[i] >> attenuation_shift;
 			}
 		}
 	}
