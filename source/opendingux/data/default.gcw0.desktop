@@ -14,3 +14,4 @@ Type=Application
 StartupNotify=true
 Categories=emulators;
 MimeType=application/x-gba-rom;application/zip;
+X-OD-NeedsDownscaling=true

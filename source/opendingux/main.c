@@ -25,6 +25,8 @@
 
 //TIMER_TYPE timer[4];
 
+#define DINGUX_ALLOW_DOWNSCALING_FILE "/sys/devices/platform/jz-lcd.0/allow_downscaling"
+
 frameskip_type current_frameskip_type = auto_frameskip;
 u32 frameskip_value = 4;
 u32 random_skip = 0;
@@ -145,6 +147,7 @@ int main(int argc, char *argv[])
   u32 dispstat;
   char load_filename[512];
   char file[MAX_PATH + 1];
+  FILE *ipu_downscale_file = NULL;
 
   ssize_t count = readlink("/proc/self/exe", file, 256);
   // Copy the path of the executable into executable_path
@@ -165,6 +168,14 @@ int main(int argc, char *argv[])
     {
       executable_path[0] = '\0';
     }
+  }
+
+  /* Ensure that IPU downscaling is enabled */
+  ipu_downscale_file = fopen(DINGUX_ALLOW_DOWNSCALING_FILE, "wb");
+  if (ipu_downscale_file)
+  {
+     fputs("1", ipu_downscale_file);
+     fclose(ipu_downscale_file);
   }
 
   init_video();

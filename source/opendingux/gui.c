@@ -1198,8 +1198,6 @@ static struct MenuEntry DisplayMenu_FPSCounter = {
 };
 
 #ifndef NO_SCALING
-
-#ifdef RG350M
 static struct MenuEntry PerGameDisplayMenu_ScaleMode = {
 	ENTRY_OPTION("image_size", "Image scaling", &PerGameScaleMode),
 	.ChoiceCount = 14, .Choices = { { "No override", "" }, { "Aspect, fast", "aspect" }, { "Full, fast", "fullscreen" }, { "Aspect, bilinear", "aspect_bilinear" }, { "Full, bilinear", "fullscreen_bilinear" }, { "Aspect, sub-pixel", "aspect_subpixel" }, { "Full, sub-pixel", "fullscreen_subpixel" }, { "None", "original" }, { "Hardware", "hardware" }, { "Hardware (x2)", "hardware_2x" }, { "Hardware (Scan Vert.)", "hardware_2x_scanline_vert" }, { "Hardware (Scan Horz.)", "hardware_2x_scanline_horz" }, { "Hardware (Grid)", "hardware_2x_scanline_grid" }, { "Hardware (Scale2x)", "hardware_scale2x" } }
@@ -1208,17 +1206,6 @@ static struct MenuEntry DisplayMenu_ScaleMode = {
 	ENTRY_OPTION("image_size", "Image scaling", &ScaleMode),
 	.ChoiceCount = 13, .Choices = { { "Aspect, fast", "aspect" }, { "Full, fast", "fullscreen" }, { "Aspect, bilinear", "aspect_bilinear" }, { "Full, bilinear", "fullscreen_bilinear" }, { "Aspect, sub-pixel", "aspect_subpixel" }, { "Full, sub-pixel", "fullscreen_subpixel" }, { "None", "original" }, { "Hardware", "hardware" }, { "Hardware (x2)", "hardware_2x" }, { "Hardware (Scan Vert.)", "hardware_2x_scanline_vert" }, { "Hardware (Scan Horz.)", "hardware_2x_scanline_horz" }, { "Hardware (Grid)", "hardware_2x_scanline_grid" }, { "Hardware (Scale2x)", "hardware_scale2x" } }
 };
-#else
-static struct MenuEntry PerGameDisplayMenu_ScaleMode = {
-	ENTRY_OPTION("image_size", "Image scaling", &PerGameScaleMode),
-	.ChoiceCount = 9, .Choices = { { "No override", "" }, { "Aspect, fast", "aspect" }, { "Full, fast", "fullscreen" }, { "Aspect, bilinear", "aspect_bilinear" }, { "Full, bilinear", "fullscreen_bilinear" }, { "Aspect, sub-pixel", "aspect_subpixel" }, { "Full, sub-pixel", "fullscreen_subpixel" }, { "None", "original" }, { "Hardware", "hardware" } }
-};
-static struct MenuEntry DisplayMenu_ScaleMode = {
-	ENTRY_OPTION("image_size", "Image scaling", &ScaleMode),
-	.ChoiceCount = 8, .Choices = { { "Aspect, fast", "aspect" }, { "Full, fast", "fullscreen" }, { "Aspect, bilinear", "aspect_bilinear" }, { "Full, bilinear", "fullscreen_bilinear" }, { "Aspect, sub-pixel", "aspect_subpixel" }, { "Full, sub-pixel", "fullscreen_subpixel" }, { "None", "original" }, { "Hardware", "hardware" } }
-};
-#endif
-
 #endif
 
 static struct MenuEntry PerGameDisplayMenu_ColorCorrection = {

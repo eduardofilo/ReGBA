@@ -199,14 +199,6 @@ static void FixUpSettings()
 	if (IsImpossibleHotkey(PerGameHotkeys[4]))
 		PerGameHotkeys[4] = 0;
 
-#ifndef RG350M
-	if (ScaleMode > hardware)
-		ScaleMode = hardware;
-
-	if (PerGameScaleMode > hardware)
-		PerGameScaleMode = hardware;
-#endif
-
 	/* Colour correction and interframe blending options
 	 * are converted to an enum via bit manipulation. It
 	 * is therefore essential that the associated settings

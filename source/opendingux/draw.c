@@ -143,7 +143,6 @@ void SetGameResolution()
 
 	switch (ResolvedScaleMode)
 	{
-#ifdef RG350M
 		case hardware_2x:
 		case hardware_2x_scanline_vert:
 		case hardware_2x_scanline_horz:
@@ -152,13 +151,6 @@ void SetGameResolution()
 			Width  = GBA_SCREEN_WIDTH << 1;
 			Height = GBA_SCREEN_HEIGHT << 1;
 			break;
-#else
-		case hardware_2x:
-		case hardware_2x_scanline_vert:
-		case hardware_2x_scanline_horz:
-		case hardware_2x_scanline_grid:
-		case hardware_scale2x:
-#endif
 		case hardware:
 			Width  = GBA_SCREEN_WIDTH;
 			Height = GBA_SCREEN_HEIGHT;
@@ -2135,7 +2127,6 @@ void ReGBA_RenderScreen(void)
 				break;
 
 #ifdef GCW_ZERO
-#ifdef RG350M
 			case hardware_2x:
 				gba_convert_2x(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
 				break;
@@ -2155,13 +2146,7 @@ void ReGBA_RenderScreen(void)
 			case hardware_scale2x:
 				gba_convert_scale2x(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
 				break;
-#else
-			case hardware_2x:
-			case hardware_2x_scanline_vert:
-			case hardware_2x_scanline_horz:
-			case hardware_2x_scanline_grid:
-			case hardware_scale2x:
-#endif
+
 			case hardware:
 				gba_convert(OutputSurface->pixels, GBAScreenBuf, GBAScreenSurface->pitch, OutputSurface->pitch);
 				break;

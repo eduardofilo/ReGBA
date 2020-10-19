@@ -35,9 +35,6 @@ else
 ifdef RG350
 	DEFS += -DRG350
 	DEFS += -DUSE_MMAP
-ifdef RG350M
-	DEFS += -DRG350M
-endif
 else
 	DEFS += -DLOAD_ALL_ROM
 endif
