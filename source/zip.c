@@ -70,7 +70,7 @@ ssize_t load_file_zip(const char *filename, uint8_t** ROMBuffer)
 	ssize_t retval = -1;
 	uint8_t *cbuffer;
 	char *ext;
-	FILE_TAG_TYPE fd;
+	FILE_TAG_TYPE fd = FILE_TAG_INVALID;
 	FILE_TAG_TYPE tmp_fd = FILE_TAG_INVALID;
 	bool WriteExternalFile = false;
 	uint8_t* Buffer = NULL;

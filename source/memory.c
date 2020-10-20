@@ -2623,7 +2623,7 @@ ssize_t load_gamepak(const char* file_path)
 {
 	errno = 0;
 	uint8_t magicbit[4];
-	FILE_TAG_TYPE fd;
+	FILE_TAG_TYPE fd = FILE_TAG_INVALID;
 	if (IsGameLoaded) {
 		update_backup_force();
 		if(FILE_CHECK_VALID(gamepak_file_large))
@@ -2734,7 +2734,7 @@ uint8_t nintendo_bios_sha1[] = {
 
 int32_t load_bios(const char* name)
 {
-	FILE_TAG_TYPE bios_file;
+	FILE_TAG_TYPE bios_file = FILE_TAG_INVALID;
 	FILE_OPEN(bios_file, name, READ);
 
 	if(FILE_CHECK_VALID(bios_file)) {
@@ -3841,7 +3841,7 @@ void loadstate_rewind(void)
  */
 uint32_t load_state(uint32_t SlotNumber)
 {
-	FILE_TAG_TYPE savestate_file;
+	FILE_TAG_TYPE savestate_file = FILE_TAG_INVALID;
 	size_t i;
 
 	char SavedStateFilename[MAX_PATH + 1];

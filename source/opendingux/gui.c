@@ -568,7 +568,7 @@ static void SavedStateUpdatePreview(struct Menu* ActiveMenu)
 		return;
 	}
 
-	FILE_TAG_TYPE fp;
+	FILE_TAG_TYPE fp = FILE_TAG_INVALID;
 	FILE_OPEN(fp, SavedStateFilename, READ);
 	if (!FILE_CHECK_VALID(fp))
 		return;
@@ -931,7 +931,7 @@ static void ActionSavedStateWrite(struct Menu** ActiveMenu, uint32_t* ActiveMenu
 		ShowErrorScreen("Preparing to write saved state #%" PRIu32 " failed:\nPath too long", SelectedState + 1);
 		return;
 	}
-	FILE_TAG_TYPE dummy;
+	FILE_TAG_TYPE dummy = FILE_TAG_INVALID;
 	FILE_OPEN(dummy, SavedStateFilename, READ);
 	if (FILE_CHECK_VALID(dummy))
 	{
