@@ -3,7 +3,7 @@ RG350=1
 TARGET      := regba
 
 TOOLCHAIN_DIR := /opt/gcw0-toolchain/usr/bin
-CROSS_COMPILE ?= $(TOOLCHAIN_DIR)/mipsel-linux-
+CROSS_COMPILE ?= $(TOOLCHAIN_DIR)/mipsel-gcw0-linux-uclibc-
 CC          := $(CROSS_COMPILE)gcc
 STRIP       := $(CROSS_COMPILE)strip
 
@@ -23,10 +23,11 @@ HEADERS     := cheats.h ../common.h ../cpu_common.h ../cpu.h draw.h main.h    \
                imageio.h ../unifont.h od-input.h settings.h cc_lut.h
 
 INCLUDE     := -I. -I.. -I../mips
-OPTIMIZE =  -O2 -mno-mips16 -fomit-frame-pointer -fno-builtin   \
-            -fno-common -Wno-write-strings -Wno-sign-compare -ffast-math -ftree-vectorize \
-			-funswitch-loops -fno-strict-aliasing
-			
+OPTIMIZE =  -O2 -mno-mips16 -mplt -mno-shared \
+	    -fomit-frame-pointer -fno-builtin -fno-common \
+	    -ffast-math -ftree-vectorize -funswitch-loops \
+	    -fno-strict-aliasing -fdata-sections
+
 DEFS        := -DGCW_ZERO -DMIPS_XBURST                                       \
                -DSCREEN_WIDTH=320 -DSCREEN_HEIGHT=240                         \
                -DGIT_VERSION=$(shell git describe --always)
@@ -40,15 +41,15 @@ endif
 HAS_MIPS32R2 := $(shell echo | $(CC) -dM -E - |grep _MIPS_ARCH_MIPS32R2)
 ifneq ($(HAS_MIPS32R2),)
 	DEFS += -DMIPS_32R2
-	OPTIMIZE += -mips32r2
+	OPTIMIZE += -mips32r2 -mtune=mips32r2
 else
 	OPTIMIZE += -mips32 -march=mips32
 endif
 
-CFLAGS      := $(SDL_CFLAGS) -mno-abicalls -Wall -Wno-unused-variable \
-               -fomit-frame-pointer $(DEFS) $(INCLUDE) $(OPTIMIZE)
+CFLAGS      := $(SDL_CFLAGS) -Wall -Wno-unused-variable -Wno-write-strings -Wno-sign-compare \
+               $(DEFS) $(INCLUDE) $(OPTIMIZE)
 ASFLAGS     := $(CFLAGS) -D__ASSEMBLY__
-LDFLAGS     := $(SDL_LIBS) -lpthread -lz -lm -lpng -s
+LDFLAGS     := $(CFLAGS) $(SDL_LIBS) -lpthread -lz -lm -lpng -s
 
 DATA_TO_CLEAN := .opk_data $(TARGET)_rg350.opk
 
@@ -66,8 +67,8 @@ $(TARGET)_rg350.opk: $(TARGET)
 	$(CMD)cp -r data .opk_data
 	$(CMD)cp ../../game_config.txt .opk_data
 	$(CMD)cp ../../bios/gba_bios.bin .opk_data
-	$(CMD)cp $< .opk_data/regba
-	$(CMD)$(STRIP) .opk_data/regba
+	$(CMD)cp $< .opk_data/regba.gcw0
+	$(CMD)$(STRIP) .opk_data/regba.gcw0
 	$(CMD)$(TOOLCHAIN_DIR)/mksquashfs .opk_data $@ -all-root -noappend -no-exports -no-xattrs -no-progress >/dev/null
 
 # The two below declarations ensure that editing a .c file recompiles only that
