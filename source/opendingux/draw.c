@@ -20,6 +20,14 @@
 #include "common.h"
 #include "cc_lut.h"
 
+/* Hack to enable SDL_SWIZZLEBGR support when
+ * using official (old) GCW0 toolchain */
+#ifdef GCW_ZERO
+#ifndef SDL_SWIZZLEBGR
+#define SDL_SWIZZLEBGR	0x00000040
+#endif
+#endif
+
 struct StringCut {
 	uint32_t Start;  // Starting character index of the cut, inclusive.
 	uint32_t End;    // Ending character index of the cut, exclusive.
