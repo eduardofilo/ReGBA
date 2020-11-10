@@ -3,6 +3,14 @@
 
 #include "port.h"
 
+/* Hack to enable SDL_SWIZZLEBGR support when
+ * using official (old) GCW0 toolchain */
+#ifdef GCW_ZERO
+#ifndef SDL_SWIZZLEBGR
+#define SDL_SWIZZLEBGR	0x00000040
+#endif
+#endif
+
 extern SDL_Surface* GBAScreenSurface;
 extern SDL_Surface* OutputSurface;
 
