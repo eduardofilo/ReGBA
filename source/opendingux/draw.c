@@ -262,25 +262,13 @@ static inline void video_post_process_mix(void)
 			uint16_t rgb_curr = *(src_curr + x);
 			uint16_t rgb_prev = *(src_prev + x);
 
-			uint16_t r_curr   = rgb_curr       & 0x1F;
-			uint16_t g_curr   = rgb_curr >>  5 & 0x1F;
-			uint16_t b_curr   = rgb_curr >> 10 & 0x1F;
-
-			uint16_t r_prev   = rgb_prev       & 0x1F;
-			uint16_t g_prev   = rgb_prev >>  5 & 0x1F;
-			uint16_t b_prev   = rgb_prev >> 10 & 0x1F;
-
 			/* Store colours for next frame */
 			*(src_prev + x)   = rgb_curr;
 
-			/* Mix colours */
-			uint16_t r_mix    = (r_curr >> 1) + (r_prev >> 1) + (((r_curr & 0x1) + (r_prev & 0x1)) >> 1);
-			uint16_t g_mix    = (g_curr >> 1) + (g_prev >> 1) + (((g_curr & 0x1) + (g_prev & 0x1)) >> 1);
-			uint16_t b_mix    = (b_curr >> 1) + (b_prev >> 1) + (((b_curr & 0x1) + (b_prev & 0x1)) >> 1);
-
-			/* Convert back to BGR555 and assign
-			 * colours for current frame */
-			*(dst + x)        = b_mix << 10 | g_mix << 5 | r_mix;
+			/* Mix colours
+			 * > "Mixing Packed RGB Pixels Efficiently"
+			 *   http://blargg.8bitalley.com/info/rgb_mixing.html */
+			*(dst + x)        = (rgb_curr + rgb_prev + ((rgb_curr ^ rgb_prev) & 0x421)) >> 1;
 		}
 		src_curr += GBA_SCREEN_WIDTH;
 		src_prev += GBA_SCREEN_WIDTH;
@@ -303,26 +291,14 @@ static inline void video_post_process_cc_mix(void)
 			uint16_t rgb_curr = *(src_curr + x);
 			uint16_t rgb_prev = *(src_prev + x);
 
-			uint16_t r_curr   = rgb_curr       & 0x1F;
-			uint16_t g_curr   = rgb_curr >>  5 & 0x1F;
-			uint16_t b_curr   = rgb_curr >> 10 & 0x1F;
-
-			uint16_t r_prev   = rgb_prev       & 0x1F;
-			uint16_t g_prev   = rgb_prev >>  5 & 0x1F;
-			uint16_t b_prev   = rgb_prev >> 10 & 0x1F;
-
 			/* Store colours for next frame */
 			*(src_prev + x)   = rgb_curr;
 
-			/* Mix colours */
-			uint16_t r_mix    = (r_curr >> 1) + (r_prev >> 1) + (((r_curr & 0x1) + (r_prev & 0x1)) >> 1);
-			uint16_t g_mix    = (g_curr >> 1) + (g_prev >> 1) + (((g_curr & 0x1) + (g_prev & 0x1)) >> 1);
-			uint16_t b_mix    = (b_curr >> 1) + (b_prev >> 1) + (((b_curr & 0x1) + (b_prev & 0x1)) >> 1);
-
-			/* Convert back to BGR555, perform colour
-			 * correction and assign colours for current
-			 * frame */
-			*(dst + x)        = *(CcLUT + (b_mix << 10 | g_mix << 5 | r_mix));
+			/* Mix colours and perform colour correction
+			 * > "Mixing Packed RGB Pixels Efficiently"
+			 *   http://blargg.8bitalley.com/info/rgb_mixing.html */
+			*(dst + x)        = *(CcLUT +
+					(((rgb_curr + rgb_prev + ((rgb_curr ^ rgb_prev) & 0x421)) >> 1) & 0x7FFF));
 		}
 		src_curr += GBA_SCREEN_WIDTH;
 		src_prev += GBA_SCREEN_WIDTH;
