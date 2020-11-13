@@ -71,6 +71,8 @@ static uint16_t GBAScreenProcessed[GBA_SCREEN_WIDTH * GBA_SCREEN_HEIGHT];
 
 void init_video()
 {
+	size_t i;
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0)
 	{
 		printf("Failed to initialize SDL !!\n");
@@ -104,10 +106,11 @@ void init_video()
 	GBAScreen = (uint16_t*) GBAScreenSurface->pixels;
 
 	/* Set auxiliary post-processing buffers to all-white */
-	memset(GBAScreenPrev, 0xFFFF,
-			GBA_SCREEN_WIDTH * GBA_SCREEN_HEIGHT * sizeof(uint16_t));
-	memset(GBAScreenProcessed, 0xFFFF,
-			GBA_SCREEN_WIDTH * GBA_SCREEN_HEIGHT * sizeof(uint16_t));
+	for (i = 0; i < GBA_SCREEN_WIDTH * GBA_SCREEN_HEIGHT; i++)
+	{
+		GBAScreenPrev[i]      = 0x7FFF;
+		GBAScreenProcessed[i] = 0x7FFF;
+	}
 
 #ifdef NO_SCALING
 	ScaleMode = unscaled;
@@ -251,7 +254,7 @@ static inline void video_post_process_mix(void)
 		for (x = 0; x < GBA_SCREEN_WIDTH; x++)
 		{
 			/* Get colours from current + previous frames (BGR555) */
-			uint16_t rgb_curr = *(src_curr + x);
+			uint16_t rgb_curr = *(src_curr + x) & 0x7FFF;
 			uint16_t rgb_prev = *(src_prev + x);
 
 			/* Store colours for next frame */
@@ -280,7 +283,7 @@ static inline void video_post_process_cc_mix(void)
 		for (x = 0; x < GBA_SCREEN_WIDTH; x++)
 		{
 			/* Get colours from current + previous frames (BGR555) */
-			uint16_t rgb_curr = *(src_curr + x);
+			uint16_t rgb_curr = *(src_curr + x) & 0x7FFF;
 			uint16_t rgb_prev = *(src_prev + x);
 
 			/* Store colours for next frame */
@@ -290,7 +293,7 @@ static inline void video_post_process_cc_mix(void)
 			 * > "Mixing Packed RGB Pixels Efficiently"
 			 *   http://blargg.8bitalley.com/info/rgb_mixing.html */
 			*(dst + x)        = *(CcLUT +
-					(((rgb_curr + rgb_prev + ((rgb_curr ^ rgb_prev) & 0x421)) >> 1) & 0x7FFF));
+					((rgb_curr + rgb_prev + ((rgb_curr ^ rgb_prev) & 0x421)) >> 1));
 		}
 		src_curr += GBA_SCREEN_WIDTH;
 		src_prev += GBA_SCREEN_WIDTH;
@@ -1679,19 +1682,17 @@ static inline void gba_convert_2x_scanline_vert(uint16_t* out_buf, uint16_t* in_
 		for (x = 0; x < GBA_SCREEN_WIDTH; x++)
 		{
 			/* Get raw pixel colour */
-			uint32_t color = (uint32_t)*(src + x);
+			uint32_t color = (uint32_t)*(src + x) & 0x7FFF;
 
-			/* Split into RGB components */
-			uint32_t r = color       & 0x1F;
-			uint32_t g = color >>  5 & 0x1F;
-			uint32_t b = color >> 10 & 0x1F;
+			/* Get raw scanline colour (raw colour * 0.75)
+			 * > First pass: 50:50 mix of color:0 */
+			uint32_t scanline_color = (color + (color & 0x421)) >> 1;
+			/* > Second pass: 50:50 mix of color:(color:0)
+			 *   => Gives ((1 + 0.5) / 2) = 0.75 */
+			scanline_color = (color + scanline_color + ((color ^ scanline_color) & 0x421)) >> 1;
 
-			/* Get raw scanline colour
-			 * (raw colour * 0.75) */
-			uint32_t scanline_color =
-               ((r - (r >> 2))      ) |
-               ((g - (g >> 2)) <<  5) |
-               ((b - (b >> 2)) << 10);
+			/* c.f "Mixing Packed RGB Pixels Efficiently"
+			 * http://blargg.8bitalley.com/info/rgb_mixing.html */
 
 			/* Convert colours */
 			color          = bgr555_to_native_16(color);
@@ -1737,19 +1738,17 @@ static inline void gba_convert_2x_scanline_horz(uint16_t* out_buf, uint16_t* in_
 		for (x = 0; x < GBA_SCREEN_WIDTH; x++)
 		{
 			/* Get raw pixel colour */
-			uint32_t color = (uint32_t)*(src + x);
+			uint32_t color = (uint32_t)*(src + x) & 0x7FFF;
 
-			/* Split into RGB components */
-			uint32_t r = color       & 0x1F;
-			uint32_t g = color >>  5 & 0x1F;
-			uint32_t b = color >> 10 & 0x1F;
+			/* Get raw scanline colour (raw colour * 0.75)
+			 * > First pass: 50:50 mix of color:0 */
+			uint32_t scanline_color = (color + (color & 0x421)) >> 1;
+			/* > Second pass: 50:50 mix of color:(color:0)
+			 *   => Gives ((1 + 0.5) / 2) = 0.75 */
+			scanline_color = (color + scanline_color + ((color ^ scanline_color) & 0x421)) >> 1;
 
-			/* Get raw scanline colour
-			 * (raw colour * 0.75) */
-			uint32_t scanline_color =
-               ((r - (r >> 2))      ) |
-               ((g - (g >> 2)) <<  5) |
-               ((b - (b >> 2)) << 10);
+			/* c.f "Mixing Packed RGB Pixels Efficiently"
+			 * http://blargg.8bitalley.com/info/rgb_mixing.html */
 
 			/* Convert colours */
 			color          = bgr555_to_native_16(color);
@@ -1790,19 +1789,17 @@ static inline void gba_convert_2x_scanline_grid(uint16_t* out_buf, uint16_t* in_
 		for (x = 0; x < GBA_SCREEN_WIDTH; x++)
 		{
 			/* Get raw pixel colour */
-			uint32_t color = (uint32_t)*(src + x);
+			uint32_t color = (uint32_t)*(src + x) & 0x7FFF;
 
-			/* Split into RGB components */
-			uint32_t r = color       & 0x1F;
-			uint32_t g = color >>  5 & 0x1F;
-			uint32_t b = color >> 10 & 0x1F;
+			/* Get raw scanline colour (raw colour * 0.75)
+			 * > First pass: 50:50 mix of color:0 */
+			uint32_t scanline_color = (color + (color & 0x421)) >> 1;
+			/* > Second pass: 50:50 mix of color:(color:0)
+			 *   => Gives ((1 + 0.5) / 2) = 0.75 */
+			scanline_color = (color + scanline_color + ((color ^ scanline_color) & 0x421)) >> 1;
 
-			/* Get raw scanline colour
-			 * (raw colour * 0.75) */
-			uint32_t scanline_color =
-               ((r - (r >> 2))      ) |
-               ((g - (g >> 2)) <<  5) |
-               ((b - (b >> 2)) << 10);
+			/* c.f "Mixing Packed RGB Pixels Efficiently"
+			 * http://blargg.8bitalley.com/info/rgb_mixing.html */
 
 			/* Convert colours */
 			color          = bgr555_to_native_16(color);

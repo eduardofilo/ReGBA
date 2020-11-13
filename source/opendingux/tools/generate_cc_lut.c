@@ -23,7 +23,7 @@
 #define CC_BG             0.21f
 #define CC_GAMMA_ADJ      1.0f
 
-#define CC_LUT_SIZE       32768
+#define CC_LUT_SIZE       (0x7FFF + 1)
 
 static uint16_t c_lut[CC_LUT_SIZE] = {0};
 
@@ -68,7 +68,7 @@ void init_lut(void)
       r_final = (unsigned)((r_correct * CC_RGB_MAX) + 0.5f) & 0x1F;
       g_final = (unsigned)((g_correct * CC_RGB_MAX) + 0.5f) & 0x1F;
       b_final = (unsigned)((b_correct * CC_RGB_MAX) + 0.5f) & 0x1F;
-      c_lut[color] = 1 << 15 | b_final << 10 | g_final << 5 | r_final;
+      c_lut[color] = b_final << 10 | g_final << 5 | r_final;
    }
 }
 
@@ -108,7 +108,10 @@ int main ()
 
    for (i = 0; i < CC_LUT_SIZE; i++)
    {
-      fprintf(file, " %#04x", c_lut[i]);
+      if (c_lut[i] == 0)
+         fprintf(file, " %6s", "0x0");
+      else
+         fprintf(file, " %#6x", c_lut[i]);
 
       if (i == CC_LUT_SIZE - 1)
          fprintf(file, "\n");
