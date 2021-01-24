@@ -120,4 +120,20 @@ extern uint32_t UserFrameskip;
 extern struct timespec TimeDifference(struct timespec Past, struct timespec Present);
 extern void GetFileNameNoExtension(char* Result, const char* Path);
 
+enum ipu_filter_type
+{
+	IPU_FILTER_BICUBIC  = 0,
+	IPU_FILTER_BILINEAR = 1,
+	IPU_FILTER_NEAREST  = 2
+};
+
+extern uint32_t PerGameIpuKeepAspectRatio;
+extern uint32_t IpuKeepAspectRatio;
+extern uint32_t PerGameIpuFilterType;
+extern uint32_t IpuFilterType;
+
+extern void SetIpuAllowDownscaling(bool AllowDownscaling);
+extern void SetIpuKeepAspectRatio(bool KeepAspect);
+extern void SetIpuFilterType(enum ipu_filter_type FilterType);
+
 #endif
