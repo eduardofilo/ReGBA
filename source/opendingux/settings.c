@@ -19,6 +19,10 @@
 
 #include "common.h"
 
+#if (SCREEN_WIDTH == GBA_SCREEN_WIDTH) && (SCREEN_HEIGHT == GBA_SCREEN_HEIGHT)
+#define NO_SCALING
+#endif
+
 static void Menu_SaveOption(FILE_TAG_TYPE fd, struct MenuEntry *entry)
 {
 	char buf[257];
@@ -207,6 +211,14 @@ static void FixUpSettings()
 	PerGameColorCorrection    = (PerGameColorCorrection > 2)    ? 2 : PerGameColorCorrection;
 	InterframeBlending        = (InterframeBlending > 1)        ? 1 : InterframeBlending;
 	PerGameInterframeBlending = (PerGameInterframeBlending > 2) ? 2 : PerGameInterframeBlending;
+
+#if !defined(NO_SCALING)
+	/* Ensure IPU configuration is valid */
+	IpuKeepAspectRatio        = (IpuKeepAspectRatio > 1)                        ? 1                      : IpuKeepAspectRatio;
+	PerGameIpuKeepAspectRatio = (PerGameIpuKeepAspectRatio > 2)                 ? 2                      : PerGameIpuKeepAspectRatio;
+	IpuFilterType             = (IpuFilterType > IPU_FILTER_NEAREST)            ? IPU_FILTER_NEAREST     : IpuFilterType;
+	PerGameIpuFilterType      = (PerGameIpuFilterType > IPU_FILTER_NEAREST + 1) ? IPU_FILTER_NEAREST + 1 : PerGameIpuFilterType;
+#endif
 }
 
 void ReGBA_LoadSettings(char *cfg_name, bool PerGame)
@@ -305,6 +317,20 @@ void ReGBA_LoadSettings(char *cfg_name, bool PerGame)
 		ReGBA_Trace("W: Couldn't open file %s for loading.\n", fname);
 	}
 	FixUpSettings();
+
+#if !defined(NO_SCALING)
+	/* Apply IPU settings
+	 * > Note that 'keep aspect ratio' config value
+	 *   is inverted, since zero is the default
+	 *   (which must correspond to 'on') */
+	bool ResolvedIpuKeepAspectRatio = !((bool)ResolveSetting(
+			IpuKeepAspectRatio, PerGameIpuKeepAspectRatio));
+	enum ipu_filter_type ResolvedIpuFilterType = (enum ipu_filter_type)ResolveSetting(
+			IpuFilterType, PerGameIpuFilterType);
+	SetIpuKeepAspectRatio(ResolvedIpuKeepAspectRatio);
+	SetIpuFilterType(ResolvedIpuFilterType);
+#endif
+
 	ReGBA_ProgressFinalise();
 }
 

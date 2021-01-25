@@ -27,6 +27,114 @@ uint32_t ShowFPS;
 uint32_t PerGameUserFrameskip;
 uint32_t UserFrameskip;
 
+uint32_t PerGameIpuKeepAspectRatio;
+uint32_t IpuKeepAspectRatio;
+uint32_t PerGameIpuFilterType;
+uint32_t IpuFilterType;
+
+#define DINGUX_ALLOW_DOWNSCALING_FILE     "/sys/devices/platform/jz-lcd.0/allow_downscaling"
+#define DINGUX_KEEP_ASPECT_FILE           "/sys/devices/platform/jz-lcd.0/keep_aspect_ratio"
+#define DINGUX_SHARPNESS_UPSCALING_FILE   "/sys/devices/platform/jz-lcd.0/sharpness_upscaling"
+#define DINGUX_SHARPNESS_DOWNSCALING_FILE "/sys/devices/platform/jz-lcd.0/sharpness_downscaling"
+
+static bool _IpuAllowDownscalingSet = false;
+static bool _IpuAllowDownscaling;
+static bool _IpuKeepAspectRatioSet = false;
+static bool _IpuKeepAspectRatio;
+static bool _IpuFilterTypeSet = false;
+static enum ipu_filter_type _IpuFilterType;
+
+void SetIpuAllowDownscaling(bool AllowDownscaling)
+{
+	FILE *allow_downscaling_file = NULL;
+
+	if (_IpuAllowDownscalingSet &&
+	    (_IpuAllowDownscaling == AllowDownscaling))
+	   return;
+
+	allow_downscaling_file = fopen(DINGUX_ALLOW_DOWNSCALING_FILE, "wb");
+	if (allow_downscaling_file)
+	{
+		fputs(AllowDownscaling ? "1" : "0", allow_downscaling_file);
+		fclose(allow_downscaling_file);
+	}
+
+	_IpuAllowDownscalingSet = true;
+	_IpuAllowDownscaling = AllowDownscaling;
+}
+
+void SetIpuKeepAspectRatio(bool KeepAspect)
+{
+	FILE *keep_aspect_file = NULL;
+
+	if (_IpuKeepAspectRatioSet &&
+	    (_IpuKeepAspectRatio == KeepAspect))
+	   return;
+
+	keep_aspect_file = fopen(DINGUX_KEEP_ASPECT_FILE, "wb");
+	if (keep_aspect_file)
+	{
+		fputs(KeepAspect ? "1" : "0", keep_aspect_file);
+		fclose(keep_aspect_file);
+	}
+
+	_IpuKeepAspectRatioSet = true;
+	_IpuKeepAspectRatio = KeepAspect;
+}
+
+void SetIpuFilterType(enum ipu_filter_type FilterType)
+{
+	/* Sharpness settings range is [0,32]
+	 * - 0:      nearest-neighbour
+	 * - 1:      bilinear
+	 * - 2...32: bicubic (translating to a sharpness
+	 *                    factor of -0.25..-4.0 internally)
+	 * Default bicubic sharpness factor is
+	 * (-0.125 * 8) = -1.0 */
+	const char *sharpness_str        = "8";
+	FILE *sharpness_upscaling_file   = NULL;
+	FILE *sharpness_downscaling_file = NULL;
+
+	if (_IpuFilterTypeSet &&
+	    (_IpuFilterType == FilterType))
+	   return;
+
+	/* Check filter type */
+	switch (FilterType)
+	{
+		case IPU_FILTER_BILINEAR:
+			sharpness_str = "1";
+			break;
+		case IPU_FILTER_NEAREST:
+			sharpness_str = "0";
+			break;
+		case IPU_FILTER_BICUBIC:
+		default:
+			/* sharpness_str is already set to 8
+			 * by default */
+			break;
+	}
+
+	/* Set upscaling sharpness */
+	sharpness_upscaling_file = fopen(DINGUX_SHARPNESS_UPSCALING_FILE, "wb");
+	if (sharpness_upscaling_file)
+	{
+		fputs(sharpness_str, sharpness_upscaling_file);
+		fclose(sharpness_upscaling_file);
+	}
+
+	/* Set downscaling sharpness */
+	sharpness_downscaling_file = fopen(DINGUX_SHARPNESS_DOWNSCALING_FILE, "wb");
+	if (sharpness_downscaling_file)
+	{
+		fputs(sharpness_str, sharpness_downscaling_file);
+		fclose(sharpness_downscaling_file);
+	}
+
+	_IpuFilterTypeSet = true;
+	_IpuFilterType = FilterType;
+}
+
 void ReGBA_Trace(const char* Format, ...)
 {
 	char* line = malloc(82);

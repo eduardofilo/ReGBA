@@ -1206,6 +1206,24 @@ static struct MenuEntry DisplayMenu_ScaleMode = {
 	ENTRY_OPTION("image_size", "Image scaling", &ScaleMode),
 	.ChoiceCount = 13, .Choices = { { "Aspect, fast", "aspect" }, { "Full, fast", "fullscreen" }, { "Aspect, bilinear", "aspect_bilinear" }, { "Full, bilinear", "fullscreen_bilinear" }, { "Aspect, sub-pixel", "aspect_subpixel" }, { "Full, sub-pixel", "fullscreen_subpixel" }, { "None", "original" }, { "Hardware", "hardware" }, { "Hardware (x2)", "hardware_2x" }, { "Hardware (Scan Vert.)", "hardware_2x_scanline_vert" }, { "Hardware (Scan Horz.)", "hardware_2x_scanline_horz" }, { "Hardware (Grid)", "hardware_2x_scanline_grid" }, { "Hardware (Scale2x)", "hardware_scale2x" } }
 };
+
+static struct MenuEntry PerGameDisplayMenu_IpuKeepAspectRatio = {
+	ENTRY_OPTION("ipu_keep_aspect_ratio", "Hardware aspect", &PerGameIpuKeepAspectRatio),
+	.ChoiceCount = 3, .Choices = { { "No override", "" }, { "Native", "native" }, { "Stretched", "stretched" } }
+};
+static struct MenuEntry DisplayMenu_IpuKeepAspectRatio = {
+	ENTRY_OPTION("ipu_keep_aspect_ratio", "Hardware aspect", &IpuKeepAspectRatio),
+	.ChoiceCount = 2, .Choices = { { "Native", "native" }, { "Stretched", "stretched" } }
+};
+
+static struct MenuEntry PerGameDisplayMenu_IpuFilterType = {
+	ENTRY_OPTION("ipu_filter_type", "Hardware filter", &PerGameIpuFilterType),
+	.ChoiceCount = 4, .Choices = { { "No override", "" }, { "Bicubic", "bicubic" }, { "Bilinear", "bilinear" }, { "Nearest", "nearest" } }
+};
+static struct MenuEntry DisplayMenu_IpuFilterType = {
+	ENTRY_OPTION("ipu_filter_type", "Hardware filter", &IpuFilterType),
+	.ChoiceCount = 3, .Choices = { { "Bicubic", "bicubic" }, { "Bilinear", "bilinear" }, { "Nearest", "nearest" } }
+};
 #endif
 
 static struct MenuEntry PerGameDisplayMenu_ColorCorrection = {
@@ -1250,7 +1268,7 @@ static struct Menu PerGameDisplayMenu = {
 	.AlternateVersion = &DisplayMenu,
 	.Entries = { &PerGameDisplayMenu_BootSource, &PerGameDisplayMenu_FPSCounter,
 #ifndef NO_SCALING
-		&PerGameDisplayMenu_ScaleMode,
+		&PerGameDisplayMenu_ScaleMode, &PerGameDisplayMenu_IpuKeepAspectRatio, &PerGameDisplayMenu_IpuFilterType,
 #endif
 		&PerGameDisplayMenu_ColorCorrection, &PerGameDisplayMenu_InterframeBlending,
 		&PerGameDisplayMenu_Frameskip, &PerGameDisplayMenu_FastForwardTarget, NULL }
@@ -1261,7 +1279,7 @@ static struct Menu DisplayMenu = {
 	.AlternateVersion = &PerGameDisplayMenu,
 	.Entries = { &DisplayMenu_BootSource, &DisplayMenu_FPSCounter,
 #ifndef NO_SCALING
-		&DisplayMenu_ScaleMode,
+		&DisplayMenu_ScaleMode, &DisplayMenu_IpuKeepAspectRatio, &DisplayMenu_IpuFilterType,
 #endif
 		&DisplayMenu_ColorCorrection, &DisplayMenu_InterframeBlending,
 		&DisplayMenu_Frameskip, &DisplayMenu_FastForwardTarget, NULL }
@@ -1762,6 +1780,19 @@ u32 ReGBA_Menu(enum ReGBA_MenuEntryReason EntryReason)
 	{
 		usleep(5000);
 	}
+
+#if !defined(NO_SCALING)
+	/* Apply IPU settings
+	 * > Note that 'keep aspect ratio' config value
+	 *   is inverted, since zero is the default
+	 *   (which must correspond to 'on') */
+	bool ResolvedIpuKeepAspectRatio = !((bool)ResolveSetting(
+			IpuKeepAspectRatio, PerGameIpuKeepAspectRatio));
+	enum ipu_filter_type ResolvedIpuFilterType = (enum ipu_filter_type)ResolveSetting(
+			IpuFilterType, PerGameIpuFilterType);
+	SetIpuKeepAspectRatio(ResolvedIpuKeepAspectRatio);
+	SetIpuFilterType(ResolvedIpuFilterType);
+#endif
 
 	SetGameResolution();
 

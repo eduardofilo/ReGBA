@@ -23,9 +23,11 @@
 #include <unistd.h>
 #include <libgen.h>
 
-//TIMER_TYPE timer[4];
+#if (SCREEN_WIDTH == GBA_SCREEN_WIDTH) && (SCREEN_HEIGHT == GBA_SCREEN_HEIGHT)
+#define NO_SCALING
+#endif
 
-#define DINGUX_ALLOW_DOWNSCALING_FILE "/sys/devices/platform/jz-lcd.0/allow_downscaling"
+//TIMER_TYPE timer[4];
 
 frameskip_type current_frameskip_type = auto_frameskip;
 u32 frameskip_value = 4;
@@ -147,7 +149,6 @@ int main(int argc, char *argv[])
   u32 dispstat;
   char load_filename[512];
   char file[MAX_PATH + 1];
-  FILE *ipu_downscale_file = NULL;
 
   ssize_t count = readlink("/proc/self/exe", file, 256);
   // Copy the path of the executable into executable_path
@@ -170,13 +171,10 @@ int main(int argc, char *argv[])
     }
   }
 
+#if !defined(NO_SCALING)
   /* Ensure that IPU downscaling is enabled */
-  ipu_downscale_file = fopen(DINGUX_ALLOW_DOWNSCALING_FILE, "wb");
-  if (ipu_downscale_file)
-  {
-     fputs("1", ipu_downscale_file);
-     fclose(ipu_downscale_file);
-  }
+  SetIpuAllowDownscaling(true);
+#endif
 
   init_video();
 
@@ -576,6 +574,13 @@ static void quit_common()
     update_backup_force();
 
   SDL_Quit();
+
+#if !defined(NO_SCALING)
+	/* It is good manners to leave IPU scaling in
+	 * the default state when quitting an application */
+  SetIpuKeepAspectRatio(true);
+  SetIpuFilterType(IPU_FILTER_BICUBIC);
+#endif
 }
 
 void quit()
