@@ -26,7 +26,7 @@ INCLUDE     := -I. -I.. -I../mips
 OPTIMIZE =  -O2 -mno-mips16 -mplt -mno-shared \
 	    -fomit-frame-pointer -fno-builtin -fno-common \
 	    -ffast-math -ftree-vectorize -funswitch-loops \
-	    -fno-strict-aliasing -fdata-sections
+	    -fno-strict-aliasing -fdata-sections -flto
 
 DEFS        := -DGCW_ZERO -DMIPS_XBURST                                       \
                -DSCREEN_WIDTH=320 -DSCREEN_HEIGHT=240                         \
