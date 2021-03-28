@@ -578,8 +578,7 @@ static void quit_common()
 #if !defined(NO_SCALING)
 	/* It is good manners to leave IPU scaling in
 	 * the default state when quitting an application */
-  SetIpuKeepAspectRatio(true);
-  SetIpuFilterType(IPU_FILTER_BICUBIC);
+  ResetIpu();
 #endif
 }
 
