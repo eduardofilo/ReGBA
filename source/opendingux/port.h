@@ -135,5 +135,6 @@ extern uint32_t IpuFilterType;
 extern void SetIpuAllowDownscaling(bool AllowDownscaling);
 extern void SetIpuKeepAspectRatio(bool KeepAspect);
 extern void SetIpuFilterType(enum ipu_filter_type FilterType);
+extern void ResetIpu(void);
 
 #endif

@@ -20,6 +20,10 @@
 #include "common.h"
 #include <stdarg.h>
 
+#if defined(DINGUX_BETA)
+#include <stdlib.h>
+#endif
+
 uint32_t PerGameBootFromBIOS;
 uint32_t BootFromBIOS;
 uint32_t PerGameShowFPS;
@@ -37,6 +41,9 @@ uint32_t IpuFilterType;
 #define DINGUX_SHARPNESS_UPSCALING_FILE   "/sys/devices/platform/jz-lcd.0/sharpness_upscaling"
 #define DINGUX_SHARPNESS_DOWNSCALING_FILE "/sys/devices/platform/jz-lcd.0/sharpness_downscaling"
 
+#define DINGUX_SCALING_MODE_ENVAR         "SDL_VIDEO_KMSDRM_SCALING_MODE"
+#define DINGUX_SCALING_SHARPNESS_ENVAR    "SDL_VIDEO_KMSDRM_SCALING_SHARPNESS"
+
 static bool _IpuAllowDownscalingSet = false;
 static bool _IpuAllowDownscaling;
 static bool _IpuKeepAspectRatioSet = false;
@@ -46,6 +53,7 @@ static enum ipu_filter_type _IpuFilterType;
 
 void SetIpuAllowDownscaling(bool AllowDownscaling)
 {
+#if !defined(DINGUX_BETA)
 	FILE *allow_downscaling_file = NULL;
 
 	if (_IpuAllowDownscalingSet &&
@@ -58,6 +66,7 @@ void SetIpuAllowDownscaling(bool AllowDownscaling)
 		fputs(AllowDownscaling ? "1" : "0", allow_downscaling_file);
 		fclose(allow_downscaling_file);
 	}
+#endif
 
 	_IpuAllowDownscalingSet = true;
 	_IpuAllowDownscaling = AllowDownscaling;
@@ -65,18 +74,25 @@ void SetIpuAllowDownscaling(bool AllowDownscaling)
 
 void SetIpuKeepAspectRatio(bool KeepAspect)
 {
+#if !defined(DINGUX_BETA)
 	FILE *keep_aspect_file = NULL;
+#endif
 
 	if (_IpuKeepAspectRatioSet &&
 	    (_IpuKeepAspectRatio == KeepAspect))
 	   return;
 
+#if defined(DINGUX_BETA)
+   setenv(DINGUX_SCALING_MODE_ENVAR,
+			KeepAspect ? "1" : "0", 1);
+#else
 	keep_aspect_file = fopen(DINGUX_KEEP_ASPECT_FILE, "wb");
 	if (keep_aspect_file)
 	{
 		fputs(KeepAspect ? "1" : "0", keep_aspect_file);
 		fclose(keep_aspect_file);
 	}
+#endif
 
 	_IpuKeepAspectRatioSet = true;
 	_IpuKeepAspectRatio = KeepAspect;
@@ -92,8 +108,10 @@ void SetIpuFilterType(enum ipu_filter_type FilterType)
 	 * Default bicubic sharpness factor is
 	 * (-0.125 * 8) = -1.0 */
 	const char *sharpness_str        = "8";
+#if !defined(DINGUX_BETA)
 	FILE *sharpness_upscaling_file   = NULL;
 	FILE *sharpness_downscaling_file = NULL;
+#endif
 
 	if (_IpuFilterTypeSet &&
 	    (_IpuFilterType == FilterType))
@@ -115,6 +133,9 @@ void SetIpuFilterType(enum ipu_filter_type FilterType)
 			break;
 	}
 
+#if defined(DINGUX_BETA)
+	setenv(DINGUX_SCALING_SHARPNESS_ENVAR, sharpness_str, 1);
+#else
 	/* Set upscaling sharpness */
 	sharpness_upscaling_file = fopen(DINGUX_SHARPNESS_UPSCALING_FILE, "wb");
 	if (sharpness_upscaling_file)
@@ -130,9 +151,21 @@ void SetIpuFilterType(enum ipu_filter_type FilterType)
 		fputs(sharpness_str, sharpness_downscaling_file);
 		fclose(sharpness_downscaling_file);
 	}
+#endif
 
 	_IpuFilterTypeSet = true;
 	_IpuFilterType = FilterType;
+}
+
+void ResetIpu(void)
+{
+#if defined(DINGUX_BETA)
+	unsetenv(DINGUX_SCALING_MODE_ENVAR);
+	unsetenv(DINGUX_SCALING_SHARPNESS_ENVAR);
+#else
+	SetIpuKeepAspectRatio(true);
+	SetIpuFilterType(IPU_FILTER_BICUBIC);
+#endif
 }
 
 void ReGBA_Trace(const char* Format, ...)
