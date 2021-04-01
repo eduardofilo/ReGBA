@@ -69,6 +69,15 @@ static struct timespec LastProgressUpdate;
 static uint16_t GBAScreenPrev[GBA_SCREEN_WIDTH * GBA_SCREEN_HEIGHT];
 static uint16_t GBAScreenProcessed[GBA_SCREEN_WIDTH * GBA_SCREEN_HEIGHT];
 
+#ifdef DINGUX_BETA
+/* OpenDingux Beta will crop rows from the bottom
+ * of the screen when displaying content at an
+ * integer multiple of the GBA's native resolution
+ * with 'keep aspect ratio' enabled. In this case
+ * we therefore have to add some vertical padding */
+static uint32_t ODBetaFramePaddingY = 0;
+#endif
+
 void init_video()
 {
 	size_t i;
@@ -144,6 +153,12 @@ void SetGameResolution()
 	video_scale_type ResolvedScaleMode = ResolveSetting(ScaleMode, PerGameScaleMode);
 	unsigned int Width, Height;
 
+#ifdef DINGUX_BETA
+	bool ResolvedIpuKeepAspectRatio = !((bool)ResolveSetting(
+			IpuKeepAspectRatio, PerGameIpuKeepAspectRatio));
+	ODBetaFramePaddingY = 0;
+#endif
+
 	switch (ResolvedScaleMode)
 	{
 		case hardware_2x:
@@ -153,10 +168,24 @@ void SetGameResolution()
 		case hardware_scale2x:
 			Width  = GBA_SCREEN_WIDTH << 1;
 			Height = GBA_SCREEN_HEIGHT << 1;
+#ifdef DINGUX_BETA
+			if (ResolvedIpuKeepAspectRatio)
+			{
+				Height += 4;
+				ODBetaFramePaddingY = 2;
+			}
+#endif
 			break;
 		case hardware:
 			Width  = GBA_SCREEN_WIDTH;
 			Height = GBA_SCREEN_HEIGHT;
+#ifdef DINGUX_BETA
+			if (ResolvedIpuKeepAspectRatio)
+			{
+				Height += 2;
+				ODBetaFramePaddingY = 1;
+			}
+#endif
 			break;
 		default:
 			Width = SCREEN_WIDTH;
@@ -1597,6 +1626,10 @@ static inline void gba_convert(uint16_t* Dest, uint16_t* Src,
 	uint32_t DestSkip = DestPitch - GBA_SCREEN_WIDTH * sizeof(uint16_t);
 #endif
 
+#ifdef DINGUX_BETA
+	Dest += ODBetaFramePaddingY * DestPitch;
+#endif
+
 	uint32_t X, Y;
 	for (Y = 0; Y < GBA_SCREEN_HEIGHT; Y++)
 	{
@@ -1624,7 +1657,11 @@ static inline void gba_convert_2x(uint16_t* out_buf, uint16_t* in_buf,
 	uint32_t in_pitch, uint32_t out_pitch)
 {
 	uint16_t *src      = in_buf;
+#ifdef DINGUX_BETA
+	uint16_t *dst      = out_buf + (ODBetaFramePaddingY * out_pitch);
+#else
 	uint16_t *dst      = out_buf;
+#endif
 	/* Buffers are 16bit -> divide by 2 */
 	uint32_t src_width = in_pitch  >> 1;
 	uint32_t dst_width = out_pitch >> 1;
@@ -1669,7 +1706,11 @@ static inline void gba_convert_2x_scanline_vert(uint16_t* out_buf, uint16_t* in_
 	uint32_t in_pitch, uint32_t out_pitch)
 {
 	uint16_t *src      = in_buf;
+#ifdef DINGUX_BETA
+	uint16_t *dst      = out_buf + (ODBetaFramePaddingY * out_pitch);
+#else
 	uint16_t *dst      = out_buf;
+#endif
 	/* Buffers are 16bit -> divide by 2 */
 	uint32_t src_width = in_pitch  >> 1;
 	uint32_t dst_width = out_pitch >> 1;
@@ -1725,7 +1766,11 @@ static inline void gba_convert_2x_scanline_horz(uint16_t* out_buf, uint16_t* in_
 	uint32_t in_pitch, uint32_t out_pitch)
 {
 	uint16_t *src      = in_buf;
+#ifdef DINGUX_BETA
+	uint16_t *dst      = out_buf + (ODBetaFramePaddingY * out_pitch);
+#else
 	uint16_t *dst      = out_buf;
+#endif
 	/* Buffers are 16bit -> divide by 2 */
 	uint32_t src_width = in_pitch  >> 1;
 	uint32_t dst_width = out_pitch >> 1;
@@ -1776,7 +1821,11 @@ static inline void gba_convert_2x_scanline_grid(uint16_t* out_buf, uint16_t* in_
 	uint32_t in_pitch, uint32_t out_pitch)
 {
 	uint16_t *src      = in_buf;
+#ifdef DINGUX_BETA
+	uint16_t *dst      = out_buf + (ODBetaFramePaddingY * out_pitch);
+#else
 	uint16_t *dst      = out_buf;
+#endif
 	/* Buffers are 16bit -> divide by 2 */
 	uint32_t src_width = in_pitch  >> 1;
 	uint32_t dst_width = out_pitch >> 1;
@@ -1831,8 +1880,12 @@ static inline void gba_convert_scale2x(uint16_t* out_buf, uint16_t* in_buf,
 	uint32_t src_width = in_pitch  >> 1;
 	uint32_t dst_width = out_pitch >> 1;
 	uint16_t *src      = in_buf;
+#ifdef DINGUX_BETA
+	uint16_t *out0     = out_buf + (ODBetaFramePaddingY * out_pitch);
+#else
 	uint16_t *out0     = out_buf;
-	uint16_t *out1     = out_buf + dst_width;
+#endif
+	uint16_t *out1     = out0 + dst_width;
 	size_t x, y;
 
 	for (y = 0; y < GBA_SCREEN_HEIGHT; y++)
@@ -1967,12 +2020,17 @@ void ApplyScaleMode(video_scale_type NewMode)
 		case fullscreen:
 		case fullscreen_subpixel:
 		case fullscreen_bilinear:
+			break;
 		case hardware:
 		case hardware_2x:
 		case hardware_2x_scanline_vert:
 		case hardware_2x_scanline_horz:
 		case hardware_2x_scanline_grid:
 		case hardware_scale2x:
+#ifdef DINGUX_BETA
+			if (ODBetaFramePaddingY > 0)
+				memset(OutputSurface->pixels, 0, OutputSurface->pitch * OutputSurface->h);
+#endif
 			break;
 	}
 }
