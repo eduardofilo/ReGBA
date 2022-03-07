@@ -149,6 +149,10 @@ enum OpenDingux_Buttons Hotkeys[5] = {
 	0,                            // Quick save state #1
 };
 
+#if (defined(GCW_ZERO) || defined(RS90))
+uint32_t MenuToggleCombo = 0;
+#endif
+
 // The menu keys, in decreasing order of priority when two or more are
 // pressed. For example, when the user keeps a direction pressed but also
 // presses A, start ignoring the direction.
@@ -362,6 +366,7 @@ enum ReGBA_Buttons ReGBA_GetPressedButtons()
 {
 	uint_fast8_t i;
 	enum ReGBA_Buttons Result = 0;
+	bool toggle_menu = false;
 
 	UpdateOpenDinguxButtons();
 
@@ -389,18 +394,42 @@ enum ReGBA_Buttons ReGBA_GetPressedButtons()
 	if ((Result & REGBA_BUTTON_UP) && (Result & REGBA_BUTTON_DOWN))
 		Result &= ~REGBA_BUTTON_UP;
 
-	if (
-#if defined(GCW_ZERO) || defined(RS90)
-	// Unified emulator menu buttons: Start+Select
-		((LastButtons & (OPENDINGUX_BUTTON_START | OPENDINGUX_BUTTON_SELECT)) == (OPENDINGUX_BUTTON_START | OPENDINGUX_BUTTON_SELECT))
+#if (defined(GCW_ZERO) || defined(RS90))
+	switch (MenuToggleCombo)
+	{
+		case MENU_TOGGLE_POWER_OR_L3_R3:
+			if ((LastButtons & OPENDINGUX_BUTTON_MENU) ||
+			    ((LastButtons & (OPENDINGUX_BUTTON_L3 | OPENDINGUX_BUTTON_R3)) ==
+					(OPENDINGUX_BUTTON_L3 | OPENDINGUX_BUTTON_R3)))
+				toggle_menu = true;
+		case MENU_TOGGLE_POWER:
+			if (LastButtons & OPENDINGUX_BUTTON_MENU)
+				toggle_menu = true;
+			break;
+		case MENU_TOGGLE_START_SELECT:
+			if ((LastButtons & (OPENDINGUX_BUTTON_START | OPENDINGUX_BUTTON_SELECT)) ==
+					(OPENDINGUX_BUTTON_START | OPENDINGUX_BUTTON_SELECT))
+				toggle_menu = true;
+			break;
+		case MENU_TOGGLE_POWER_OR_START_SELECT:
+		default:
+			if ((LastButtons & OPENDINGUX_BUTTON_MENU) ||
+			    ((LastButtons & (OPENDINGUX_BUTTON_START | OPENDINGUX_BUTTON_SELECT)) ==
+					(OPENDINGUX_BUTTON_START | OPENDINGUX_BUTTON_SELECT)))
+				toggle_menu = true;
+			break;
+	}
 #else
 	// The ReGBA Menu key should be pressed if ONLY the hotkey bound to it
 	// is pressed on the native device.
 	// This is not in ProcessSpecialKeys because REGBA_BUTTON_MENU needs to
 	// be returned by ReGBA_GetPressedButtons.
-		LastButtons == Hotkeys[1]
+	if ((LastButtons == Hotkeys[1]) ||
+	    (LastButtons & OPENDINGUX_BUTTON_MENU))
+	   toggle_menu = true;
 #endif
-	 || (LastButtons & OPENDINGUX_BUTTON_MENU))
+
+	if (toggle_menu)
 		Result |= REGBA_BUTTON_MENU;
 
 	return Result;

@@ -1432,7 +1432,12 @@ static struct MenuEntry HotkeyMenu_FastForward = {
 	ENTRY_OPTIONAL_HOTKEY
 };
 
-#if !defined GCW_ZERO
+#if (defined(GCW_ZERO) || defined(RS90))
+static struct MenuEntry HotkeyMenu_MenuToggleCombo = {
+	ENTRY_OPTION("menu_toggle_combo", "Menu", &MenuToggleCombo),
+	.ChoiceCount = 4, .Choices = { { "Power/Start+Select", "power_or_start_select" }, { "Power/L3+R3", "power_or_l3_r3" }, { "Power", "power" },  { "Start+Select", "start_select" } }
+};
+#else
 static struct MenuEntry HotkeyMenu_Menu = {
 	ENTRY_OPTION("hotkey_menu", "Menu", &Hotkeys[1]),
 	ENTRY_MANDATORY_HOTKEY
@@ -1476,10 +1481,10 @@ static struct Menu HotkeyMenu = {
 	.Parent = &MainMenu, .Title = "Hotkeys",
 	.AlternateVersion = &PerGameHotkeyMenu,
 	.Entries = {
-#if !defined GCW_ZERO
-		&HotkeyMenu_Menu,
+#if (defined(GCW_ZERO) || defined(RS90))
+		&HotkeyMenu_MenuToggleCombo,
 #else
-		&Strut,
+		&HotkeyMenu_Menu,
 #endif
 		&HotkeyMenu_FastForward, &HotkeyMenu_FastForwardToggle, &HotkeyMenu_QuickLoadState, &HotkeyMenu_QuickSaveState, NULL
 	}

@@ -203,6 +203,10 @@ static void FixUpSettings()
 	if (IsImpossibleHotkey(PerGameHotkeys[4]))
 		PerGameHotkeys[4] = 0;
 
+#if (defined(GCW_ZERO) || defined(RS90))
+	MenuToggleCombo = (MenuToggleCombo > MENU_TOGGLE_START_SELECT) ? MENU_TOGGLE_START_SELECT : MenuToggleCombo;
+#endif
+
 	/* Colour correction and interframe blending options
 	 * are converted to an enum via bit manipulation. It
 	 * is therefore essential that the associated settings
