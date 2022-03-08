@@ -80,6 +80,18 @@ enum Joystick_Stick_Axis {
 	JS_AXIS_RIGHT_VERTICAL   = 3,
 };
 
+#if (defined(GCW_ZERO) || defined(RS90))
+/* Note: We do not offer an L3+R3 combo *without*
+ * power, since this would lock users out of the
+ * menu on devices without L3/R3 buttons */
+enum Menu_Toggle_Combo {
+	MENU_TOGGLE_POWER_OR_START_SELECT = 0,
+	MENU_TOGGLE_POWER_OR_L3_R3        = 1,
+	MENU_TOGGLE_POWER                 = 2,
+	MENU_TOGGLE_START_SELECT          = 3,
+};
+#endif
+
 // 0 if not fast-forwarding.
 // Otherwise, the amount of frames to skip per rendered frame.
 // 1 amounts to targetting 200% real-time;
@@ -173,6 +185,15 @@ extern enum OpenDingux_Buttons KeypadRemapping[12];
 // [4] = Quick save state #1
 extern enum OpenDingux_Buttons PerGameHotkeys[5];
 extern enum OpenDingux_Buttons Hotkeys[5];
+
+#if (defined(GCW_ZERO) || defined(RS90))
+// A value indicating which button combos will open the menu.
+// 0 means POWER or START+SELECT
+// 1 means POWER or L3+R3
+// 2 means POWER
+// 3 means START+SELECT
+extern uint32_t MenuToggleCombo;
+#endif
 
 /*
  * Returns true if the given hotkey is completely impossible to input on the
