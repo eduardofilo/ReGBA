@@ -149,6 +149,7 @@ int main(int argc, char *argv[])
   u32 dispstat;
   char load_filename[512];
   char file[MAX_PATH + 1];
+  char savestates[MAX_PATH + 1];
 
   ssize_t count = readlink("/proc/self/exe", file, 256);
   // Copy the path of the executable into executable_path
@@ -181,6 +182,8 @@ int main(int argc, char *argv[])
   // Copy the user's .gpsp directory into main_path
   sprintf(main_path, "%s/.gpsp", getenv("HOME"));
   mkdir(main_path, 0755);
+  sprintf(savestates, "%s/%s/", main_path, SAVESTATES_DIR);
+  mkdir(savestates, 0755);
 
   ReGBA_LoadSettings("global_config", false);
 #if 0

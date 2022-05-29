@@ -338,7 +338,7 @@ bool ReGBA_GetSavedStateFilename(char* Result, const char* GamePath, uint32_t Sl
 	
 	if (strlen(main_path) + strlen(FileNameNoExt) + strlen(SlotNumberString) + 2 /* / . */ > MAX_PATH)
 		return false;
-	sprintf(Result, "%s/%s.s%s", main_path, FileNameNoExt, SlotNumberString);
+	sprintf(Result, "%s/%s/%s.s%s", main_path, SAVESTATES_DIR, FileNameNoExt, SlotNumberString);
 	return true;
 }
 

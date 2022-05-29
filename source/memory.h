@@ -32,6 +32,7 @@ extern const uint8_t SVS_HEADER_F[SVS_HEADER_SIZE];
 #define SVS_FILE_SIZE (SAVESTATE_SIZE+SVS_HEADER_SIZE)
 
 #define CONFIG_FILENAME "game_config.txt"
+#define SAVESTATES_DIR "states"
 
 typedef enum
 {
